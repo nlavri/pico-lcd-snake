@@ -1,0 +1,21 @@
+{
+  "cmake.configureOnOpen": false,
+  "cmake.statusbar.advanced": {
+    "debug" : {
+      "visibility": "hidden"
+              },    "launch" : {
+      "visibility": "hidden"
+               },
+    // "build" : {
+    //   "visibility": "hidden"
+    //            },
+    // "buildTarget" : {
+    //   "visibility": "hidden"
+    //            },
+     },
+    "cmake.buildBeforeRun": true,
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    //Change if neccessary
+    "cortex-debug.openocdPath": "c:/Projects/rpi_pico/openocd/src/openocd.exe",
+    
+}
