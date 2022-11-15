@@ -3,18 +3,21 @@
 #ifndef __output_hal
 #define __output_hal
 
+#define BORDER_WIDTH 2
+#define STATUS_BAR_HEIGHT 15
+
+/// @struct OutputInitResult
+///  @brief Output Initialization Result
+///
+typedef struct OutputInitResult
+{
+    bool ok;
+    uint8_t w;
+    uint8_t h;
+} OutputInitResult;
+
 /// @brief Initialize input
-int init_output();
-
-/**
-    @brief Get game field width
-*/
-uint8_t get_field_w(void);
-
-/**
-    @brief Get game field height
-*/
-uint8_t get_field_h(void);
+OutputInitResult init_output();
 
 /**
     @brief Draws a game state

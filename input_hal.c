@@ -58,3 +58,21 @@ bool get_control_button_state()
 {
     return gpio_get(KEY_CTRL) == 0;
 }
+
+
+/**
+    @brief Gets "A" button state
+*/
+bool get_key_a_state()
+{
+    return gpio_get(KEY_A) == 0;
+}
+
+
+/**
+    @brief Gets "B" button state
+*/
+bool get_key_b_state()
+{
+    return gpio_get(KEY_B) == 0;
+}

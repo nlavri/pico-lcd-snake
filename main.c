@@ -1,9 +1,19 @@
+#define DEBUG
+
 #include <stdio.h>
+#include "stdlib.h"
 #include "pico/stdlib.h"
+#include "pico/bootrom.h"
 
 #include "game.h"
 #include "input_hal.h"
 #include "output_hal.h"
+
+int reset_boot()
+{
+    reset_usb_boot(0, 0);
+    return 0;
+}
 
 int main()
 {
@@ -15,13 +25,10 @@ int main()
     int init_result = init_game(&state, &input);
     if (init_result != 0)
     {
-        printf("init_game failed %d", init_result);
-        return init_result;
+        printf("init_game failed %d \r\n", init_result);
+        return reset_boot();
     }
 
-    printf("game initialized");
-
     main_loop(&state, &input);
-
-    return 0;
+    return reset_boot();
 }

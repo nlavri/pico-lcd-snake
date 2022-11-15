@@ -16,4 +16,10 @@ MOV_DIR get_direction_input();
 */
 bool get_control_button_state();
 
+///@brief Gets a state of A button
+bool get_key_a_state();
+
+///@brief Gets a state of B button
+bool get_key_b_state();
+
 #endif

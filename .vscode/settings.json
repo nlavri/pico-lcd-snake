@@ -17,5 +17,14 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
     //Change if neccessary
     "cortex-debug.openocdPath": "c:/Projects/rpi_pico/openocd/src/openocd.exe",
+    "files.associations": {
+      "output_hal.h": "c",
+      "game.h": "c",
+      "stdint.h": "c",
+      "stdbool.h": "c",
+      "input_hal.h": "c",
+      "stdlib.h": "c",
+      "dev_config.h": "c"
+    },
     
 }

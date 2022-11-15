@@ -30,7 +30,8 @@ typedef struct Point
 ///
 typedef struct GameState
 {
-  uint32_t exit_requested;
+  bool exit_requested;
+
   uint32_t is_paused;
 
   uint32_t score;
@@ -39,9 +40,11 @@ typedef struct GameState
   uint8_t field_h;
 
   Point snake_position;
+  Point prev_snake_position;
   MOV_DIR current_direction;
 
   Point fruit_position;
+  Point prev_fruit_position;
 
 } GameState;
 
@@ -52,7 +55,11 @@ typedef struct GameInput
 {
   MOV_DIR direction;
 
-  bool control_button;
+  bool btn_ctrl;
+
+  bool btn_a;
+
+  bool btn_b;
 
 } GameInput;
 
