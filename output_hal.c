@@ -57,7 +57,7 @@ OutputInitResult init_output()
 
     DEV_Delay_ms(100);
 
-    status_bar = (char *)malloc(12 * sizeof(char));
+    status_bar = (char *)malloc(30 * sizeof(char));
 
     printf("Initialized");
 
