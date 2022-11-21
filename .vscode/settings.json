@@ -24,7 +24,8 @@
       "stdbool.h": "c",
       "input_hal.h": "c",
       "stdlib.h": "c",
-      "dev_config.h": "c"
+      "dev_config.h": "c",
+      "clocks.h": "c"
     },
     
 }

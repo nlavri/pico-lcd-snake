@@ -19,6 +19,10 @@ typedef struct OutputInitResult
 /// @brief Initialize input
 OutputInitResult init_output();
 
+/// @brief Post initialize action for output 
+/// @param state Initialized game state
+void post_init_output(GameState *const state);
+
 /**
     @brief Draws a game state
 */

@@ -46,3 +46,6 @@ target_link_libraries(pico-lcd-snake pico_stdlib LCD GUI Fonts Config hardware_s
 
 pico_add_extra_outputs(pico-lcd-snake)
 
+add_custom_command(TARGET pico-lcd-snake POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/pico-lcd-snake.uf2 D:/pico-lcd-snake.uf2
+)

@@ -39,12 +39,24 @@ typedef struct GameState
   uint8_t field_w;
   uint8_t field_h;
 
+  /// @brief Top-Left snake position
   Point snake_position;
+
+  /// @brief snake size (snake is square)
+  uint8_t snake_size;
+
   Point prev_snake_position;
   MOV_DIR current_direction;
 
+  /// @brief Top-Left fruit position
   Point fruit_position;
+
+  /// @brief Fruit size (fruit is square)
+  uint8_t fruit_size;
+
   Point prev_fruit_position;
+
+  uint8_t speed;
 
 } GameState;
 
