@@ -11,4 +11,5 @@ target_include_directories(snake_app
 target_link_libraries(snake_app
     PUBLIC
         app_framework
+        app_ui
 )

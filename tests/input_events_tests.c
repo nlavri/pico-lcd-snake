@@ -35,5 +35,26 @@ int main(void)
     assert(input_events_update(&source, &input, 900, events) == 0);
     assert(input_events_update(&source, &input, 925, events) == 0);
 
+    input.right = true;
+    assert(input_events_update(&source, &input, 1000, events) == 0);
+    assert(input_events_update(&source, &input, 1025, events) == 1);
+    assert(events[0].button == INPUT_RIGHT);
+    assert(events[0].action == INPUT_PRESSED);
+    assert(input_events_update(&source, &input, 1374, events) == 0);
+    assert(input_events_update(&source, &input, 1375, events) == 1);
+    assert(events[0].button == INPUT_RIGHT);
+    assert(events[0].action == INPUT_REPEAT);
+    assert(input_events_update(&source, &input, 1484, events) == 0);
+    assert(input_events_update(&source, &input, 1485, events) == 1);
+    assert(events[0].button == INPUT_RIGHT);
+    assert(events[0].action == INPUT_REPEAT);
+
+    input.right = false;
+    assert(input_events_update(&source, &input, 1500, events) == 0);
+    assert(input_events_update(&source, &input, 1525, events) == 1);
+    assert(events[0].button == INPUT_RIGHT);
+    assert(events[0].action == INPUT_RELEASED);
+    assert(input_events_update(&source, &input, 1700, events) == 0);
+
     return 0;
 }

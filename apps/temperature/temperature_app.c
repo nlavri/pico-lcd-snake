@@ -2,6 +2,8 @@
 
 #include <stdio.h>
 
+#include "ui.h"
+
 #define TEMPERATURE_UPDATE_INTERVAL_MS 500
 
 typedef struct TemperatureAppState
@@ -123,6 +125,18 @@ static void temperature_resume(void *state_memory)
     read_temperature(state);
 }
 
+static AppResult temperature_handle_event(
+    void *state_memory,
+    const InputEvent *event)
+{
+    (void)state_memory;
+    if (event->button == INPUT_B && event->action == INPUT_PRESSED)
+    {
+        return APP_RESULT_HOME;
+    }
+    return APP_RESULT_CONTINUE;
+}
+
 static AppResult temperature_update(void *state_memory, uint32_t elapsed_ms)
 {
     TemperatureAppState *state = state_memory;
@@ -156,20 +170,13 @@ static void temperature_render(
     snprintf(value, sizeof(value), "%.1f C", state->temperature_c);
 
     display_clear(surface, DISPLAY_COLOR_BLACK);
-    display_draw_text_with_font(
-        surface,
-        centered_x(surface, "TEMPERATURE", DISPLAY_FONT_MEDIUM),
-        8,
-        "TEMPERATURE",
-        DISPLAY_FONT_MEDIUM,
-        DISPLAY_COLOR_WHITE,
-        DISPLAY_COLOR_BLACK);
+    ui_draw_header(surface, "TEMPERATURE");
     display_draw_rectangle(
-        surface, 12, 38, surface->width - 13, 89, color, 2);
+        surface, 12, 33, surface->width - 13, 88, color, 2);
     display_draw_text_with_font(
         surface,
         centered_x(surface, value, DISPLAY_FONT_LARGE),
-        50,
+        48,
         value,
         DISPLAY_FONT_LARGE,
         color,
@@ -179,17 +186,11 @@ static void temperature_render(
     display_draw_text(
         surface,
         centered_x(surface, description, DISPLAY_FONT_SMALL),
-        101,
+        96,
         description,
         color,
         DISPLAY_COLOR_BLACK);
-    display_draw_text(
-        surface,
-        centered_x(surface, "RP2040 INTERNAL SENSOR", DISPLAY_FONT_SMALL),
-        surface->height - display_font_height(DISPLAY_FONT_SMALL) - 2,
-        "RP2040 INTERNAL SENSOR",
-        DISPLAY_COLOR_GRAY,
-        DISPLAY_COLOR_BLACK);
+    ui_draw_footer(surface, "RP2040 INTERNAL SENSOR  B:HOME");
 }
 
 const Application temperature_application = {
@@ -201,7 +202,7 @@ const Application temperature_application = {
     .pause = NULL,
     .resume = temperature_resume,
     .stop = NULL,
-    .handle_event = NULL,
+    .handle_event = temperature_handle_event,
     .update = temperature_update,
     .render = temperature_render,
 };

@@ -44,7 +44,9 @@ bool app_manager_init(
     const Application *const *applications,
     size_t application_count,
     uint32_t available_capabilities,
-    float (*read_temperature_c)(void));
+    float (*read_temperature_c)(void),
+    const NetworkServiceApi *network,
+    const WeatherServiceApi *weather);
 
 void app_manager_handle_event(AppManager *manager, const InputEvent *event);
 void app_manager_update(AppManager *manager, uint32_t elapsed_ms);

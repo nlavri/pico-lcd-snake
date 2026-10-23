@@ -223,7 +223,9 @@ bool app_manager_init(
     const Application *const *applications,
     size_t application_count,
     uint32_t available_capabilities,
-    float (*read_temperature_c)(void))
+    float (*read_temperature_c)(void),
+    const NetworkServiceApi *network,
+    const WeatherServiceApi *weather)
 {
     if (manager == NULL || surface == NULL || launcher == NULL ||
         applications == NULL)
@@ -240,6 +242,8 @@ bool app_manager_init(
         .display_width = surface->width,
         .display_height = surface->height,
         .read_temperature_c = read_temperature_c,
+        .network = network,
+        .weather = weather,
         .request_launch = request_launch,
         .request_restart = request_restart,
         .manager = manager,

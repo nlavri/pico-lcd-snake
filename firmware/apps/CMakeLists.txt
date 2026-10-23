@@ -12,11 +12,16 @@ pico_enable_stdio_usb(pico-apps 1)
 target_link_libraries(pico-apps
     PRIVATE
         pico_stdlib
+        FreeRTOS-Kernel-Heap4
         app_platform
         app_framework
+        app_ui
         launcher_app
+        network_service
+        settings_app
         snake_app
         temperature_app
+        weather_app
 )
 
 pico_add_extra_outputs(pico-apps)

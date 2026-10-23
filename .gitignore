@@ -55,3 +55,6 @@ build/*
 **/.DS_Store
 .vscode/.cortex-debug.peripherals.state.json
 .vscode/.cortex-debug.registers.state.json
+
+# Local Wi-Fi provisioning values; never commit credentials.
+firmware/apps/network_defaults.local.h

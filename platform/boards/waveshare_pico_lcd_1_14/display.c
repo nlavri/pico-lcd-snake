@@ -14,6 +14,10 @@ static sFONT *waveshare_font(DisplayFont font)
 {
     switch (font)
     {
+    case DISPLAY_FONT_TINY:
+        return &Font8;
+    case DISPLAY_FONT_COMPACT:
+        return &Font16;
     case DISPLAY_FONT_MEDIUM:
         return &Font20;
     case DISPLAY_FONT_LARGE:
@@ -67,6 +71,11 @@ bool display_init(void)
     DEV_Delay_ms(100);
 
     return true;
+}
+
+void display_set_brightness(uint8_t percent)
+{
+    DEV_SET_PWM(percent > 100 ? 100 : percent);
 }
 
 DisplaySurface *display_acquire_surface(void)

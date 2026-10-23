@@ -13,3 +13,5 @@ target_link_libraries(app_framework
         app_platform
         project_logger
 )
+
+add_subdirectory(services)

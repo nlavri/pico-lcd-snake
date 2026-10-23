@@ -21,6 +21,22 @@
       "problemMatcher": "$gcc"
     },
     {
+      "label": "Pico W: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "apps-picow-debug"
+      ],
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
       "label": "Doom: Configure",
       "type": "process",
       "command": "cmake",

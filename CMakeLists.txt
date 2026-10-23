@@ -25,6 +25,18 @@ project(pico-lcd C CXX ASM)
 
 pico_sdk_init()
 
+# Application firmware runs FreeRTOS on core 0 only; core 1 never executes
+# from flash, so flash_safe_execute only needs to mask core-0 interrupts.
+add_compile_definitions(PICO_FLASH_ASSUME_CORE1_SAFE=1)
+
+set(FREERTOS_KERNEL_PATH
+    ${CMAKE_CURRENT_LIST_DIR}/third_party/FreeRTOS-Kernel)
+set(FREERTOS_CONFIG_FILE_DIRECTORY
+    ${CMAKE_CURRENT_LIST_DIR}/firmware/apps)
+add_subdirectory(
+    third_party/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040
+    FreeRTOS-Kernel)
+
 add_subdirectory(common)
 add_subdirectory(third_party/waveshare/Config)
 add_subdirectory(third_party/waveshare/Fonts)
@@ -32,7 +44,10 @@ add_subdirectory(third_party/waveshare/GUI)
 add_subdirectory(third_party/waveshare/LCD)
 add_subdirectory(platform)
 add_subdirectory(firmware/apps/system)
+add_subdirectory(ui)
 add_subdirectory(apps/launcher)
 add_subdirectory(apps/snake)
 add_subdirectory(apps/temperature)
+add_subdirectory(apps/settings)
+add_subdirectory(apps/weather)
 add_subdirectory(firmware/apps)

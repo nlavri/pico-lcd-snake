@@ -4,10 +4,12 @@
 
 #include "platform/time.h"
 #include "snake_game.h"
+#include "ui.h"
 
 #define GAME_BORDER_WIDTH 2
-#define GAME_LEFT_OFFSET 2
-#define STATUS_BAR_HEIGHT 15
+#define GAME_LEFT_OFFSET 5
+#define GAME_RIGHT_MARGIN 5
+#define GAME_TOP_OFFSET 17
 #define SNAKE_UPDATE_INTERVAL_MS 40
 
 typedef struct SnakeAppState
@@ -48,9 +50,10 @@ static bool snake_start(void *state_memory, AppContext *context)
 {
     SnakeAppState *state = state_memory;
     const uint8_t field_width =
-        context->display_width - (2 * GAME_BORDER_WIDTH) - GAME_LEFT_OFFSET;
+        context->display_width - GAME_LEFT_OFFSET - GAME_RIGHT_MARGIN -
+        (2 * GAME_BORDER_WIDTH);
     const uint8_t field_height =
-        context->display_height - STATUS_BAR_HEIGHT - (2 * GAME_BORDER_WIDTH);
+        context->display_height - GAME_TOP_OFFSET - (2 * GAME_BORDER_WIDTH);
 
     return snake_game_init(
         &state->game,
@@ -106,29 +109,23 @@ static AppResult snake_update(void *state_memory, uint32_t elapsed_ms)
 static void snake_render(const void *state_memory, DisplaySurface *surface)
 {
     const SnakeAppState *state = state_memory;
-    char status[32];
+    char status[40];
     snprintf(
         status,
         sizeof(status),
-        "Score:%2lu | Speed:%2u",
+        "SNAKE SCORE:%lu SPEED:%u",
         (unsigned long)state->game.score,
         state->game.speed);
 
-    display_clear(surface, DISPLAY_COLOR_GRAY);
-    display_draw_text(
-        surface,
-        GAME_LEFT_OFFSET,
-        1,
-        status,
-        DISPLAY_COLOR_WHITE,
-        DISPLAY_COLOR_GRAY);
+    display_clear(surface, DISPLAY_COLOR_BLACK);
+    ui_draw_header(surface, status);
     display_draw_rectangle(
         surface,
         GAME_LEFT_OFFSET,
-        STATUS_BAR_HEIGHT,
-        surface->width - 1,
+        GAME_TOP_OFFSET,
+        surface->width - GAME_RIGHT_MARGIN - 1,
         surface->height - 1,
-        DISPLAY_COLOR_BLUE,
+        ui_accent_color(),
         GAME_BORDER_WIDTH);
 
     for (uint16_t i = 0; i < state->game.snake_length; i++)
@@ -136,7 +133,7 @@ static void snake_render(const void *state_memory, DisplaySurface *surface)
         display_draw_point(
             surface,
             GAME_LEFT_OFFSET + GAME_BORDER_WIDTH + state->game.snake_body[i].x,
-            STATUS_BAR_HEIGHT + GAME_BORDER_WIDTH + state->game.snake_body[i].y,
+            GAME_TOP_OFFSET + GAME_BORDER_WIDTH + state->game.snake_body[i].y,
             DISPLAY_COLOR_RED,
             state->game.snake_size);
     }
@@ -144,7 +141,7 @@ static void snake_render(const void *state_memory, DisplaySurface *surface)
     display_draw_point(
         surface,
         GAME_LEFT_OFFSET + GAME_BORDER_WIDTH + state->game.fruit_position.x,
-        STATUS_BAR_HEIGHT + GAME_BORDER_WIDTH + state->game.fruit_position.y,
+        GAME_TOP_OFFSET + GAME_BORDER_WIDTH + state->game.fruit_position.y,
         DISPLAY_COLOR_GREEN,
         state->game.fruit_size);
 }

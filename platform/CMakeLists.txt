@@ -1,7 +1,11 @@
 add_library(app_platform STATIC
+    network.c
+    weather.c
     boards/waveshare_pico_lcd_1_14/display.c
     boards/waveshare_pico_lcd_1_14/input.c
     rp2040/log.c
+    rp2040/network_credentials.c
+    rp2040/preferences.c
     rp2040/temperature.c
     rp2040/time.c
 )
@@ -26,5 +30,7 @@ target_link_libraries(app_platform
         GUI
         LCD
         hardware_adc
+        hardware_flash
         hardware_spi
+        pico_flash
 )

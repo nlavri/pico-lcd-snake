@@ -10,4 +10,5 @@ target_include_directories(launcher_app
 target_link_libraries(launcher_app
     PUBLIC
         app_framework
+        app_ui
 )

@@ -8,7 +8,9 @@ typedef uint16_t DisplayColor;
 
 typedef enum DisplayFont
 {
+    DISPLAY_FONT_TINY,
     DISPLAY_FONT_SMALL,
+    DISPLAY_FONT_COMPACT,
     DISPLAY_FONT_MEDIUM,
     DISPLAY_FONT_LARGE,
 } DisplayFont;
@@ -31,6 +33,7 @@ typedef struct DisplaySurface
 } DisplaySurface;
 
 bool display_init(void);
+void display_set_brightness(uint8_t percent);
 DisplaySurface *display_acquire_surface(void);
 void display_clear(DisplaySurface *surface, DisplayColor color);
 void display_draw_point(

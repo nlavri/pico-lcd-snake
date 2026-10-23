@@ -16,6 +16,20 @@
       "command": "cmake --build --preset apps-pico-debug && /opt/homebrew/bin/picotool load -f -x \"${workspaceFolder}/build/apps-pico/firmware/apps/pico-apps.uf2\""
     },
     {
+      "name": "Pico W: Build only",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "cmake --build --preset apps-picow-debug"
+    },
+    {
+      "name": "Pico W: Upload via USB (no debug)",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "command": "cmake --build --preset apps-picow-debug && /opt/homebrew/bin/picotool load -f -x \"${workspaceFolder}/build/apps-picow/firmware/apps/pico-apps.uf2\""
+    },
+    {
       "name": "Pico: Debug with probe",
       "cwd": "${workspaceFolder}",
       "executable": "${command:cmake.launchTargetPath}",

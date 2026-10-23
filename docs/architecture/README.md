@@ -4,8 +4,10 @@ This document describes the architecture for evolving the Snake prototype into
 a small application platform for Raspberry Pi Pico and Pico W. The repository
 already uses the application, platform, firmware-product, and third-party
 boundaries below. The callback application manager, registry, launcher, and
-standalone DOOM target are implemented. FreeRTOS services are the next
-implementation stage.
+standalone DOOM target are implemented. The application firmware now runs its
+UI and Pico W networking under FreeRTOS. Input sampling and blocking display
+submission remain owned by the UI task until separate services provide a
+measured benefit.
 
 ## Goals
 
@@ -17,9 +19,9 @@ implementation stage.
 - Make hardware-specific code replaceable without restructuring applications.
 - Prefer fixed, measurable memory usage over hidden dynamic allocation.
 
-FreeRTOS is not used as an application loader. It schedules the input, display,
-and network services. The active foreground application is a callback-driven
-component executed by a single UI task.
+FreeRTOS is not used as an application loader. It schedules the UI and network
+services. The active foreground application is a callback-driven component
+executed by a single UI task.
 
 ## Firmware Products
 
@@ -86,9 +88,19 @@ pico-lcd-snake/
 │   │   ├── snake_app.h
 │   │   ├── snake_game.c
 │   │   └── snake_game.h
-│   └── temperature/
-│       ├── temperature_app.c
-│       └── temperature_app.h
+│   ├── settings/
+│   │   ├── settings_app.c
+│   │   └── settings_app.h
+│   ├── temperature/
+│   │   ├── temperature_app.c
+│   │   └── temperature_app.h
+│   └── weather/
+│       ├── weather_app.c
+│       └── weather_app.h
+│
+├── ui/
+│   ├── ui.c
+│   └── ui.h
 │
 ├── platform/
 │   ├── include/platform/
@@ -97,6 +109,7 @@ pico-lcd-snake/
 │   │   ├── input.h
 │   │   ├── network.h
 │   │   ├── temperature.h
+│   │   ├── weather.h
 │   │   └── time.h
 │   ├── rp2040/
 │   │   ├── log.c
@@ -131,28 +144,29 @@ pico-lcd-snake/
 ## Runtime Model
 
 ```text
-                         FreeRTOS
+                    FreeRTOS on RP2040 core 0
 
- Input service task ── InputEvent queue ──┐
-                                          ▼
-                                    UI task
+ GPIO input sampling ───────────────▶ UI task
                               ┌───────────┴───────────┐
                               │ Application manager  │
                               │ One active app       │
                               └───────────┬───────────┘
-                                          │ completed surface
-                                          ▼
-                                   Display service task
-                                          │
+                                          │ framebuffer
                                           ▼
                                       ST7789 LCD
 
- Network service task ── responses ──────▶ UI task       Pico W only
+ Settings ── Wi-Fi commands ──▶ Network task ──▶ CYW43 driver task ─SPI─▶ CYW43439
+     ▲                              │                    │
+     └──── network snapshot ────────┤                    ▼
+ Weather ── refresh request ────────┤              lwIP TCP/IP task
+     ▲                              │
+     └──── weather snapshot ────────┘
 ```
 
-FreeRTOS initially runs on core 0. Core 1 remains available for later display,
-audio, or other measured performance work. Moving work to core 1 is a future
-optimization, not part of the first migration.
+FreeRTOS is configured with `configNUMBER_OF_CORES=1` and its scheduler is
+started on RP2040 core 0. Consequently the UI, network, CYW43 driver, and lwIP
+TCP/IP tasks all execute on core 0. Core 1 is not launched and remains available
+for later display, audio, or other measured performance work.
 
 ## Application Model
 
@@ -205,6 +219,8 @@ Applications are compiled into a static registry:
 const Application *const application_registry[] = {
     &snake_application,
     &temperature_application,
+    &weather_application,
+    &settings_application,
 };
 ```
 
@@ -219,8 +235,9 @@ APP_CAP_TEMPERATURE
 APP_CAP_WIFI
 ```
 
-A weather application can therefore be included in both builds while only
-being offered by the Pico W launcher.
+Settings is included in both builds. It requires only display and input, so a
+regular Pico shows the app but renders its Wi-Fi item disabled. Weather requires
+`APP_CAP_WIFI`, so the launcher omits it from a regular Pico.
 
 ### Application State
 
@@ -290,26 +307,27 @@ is responsible for serializing output from multiple tasks.
 - Ensure only one foreground application is running at a time.
 - Never access GPIO, SPI, CYW43, or the ADC directly.
 
-### Input Service Task
+### Input Ownership
 
-- Be the only task that reads the joystick and button GPIOs.
+- The UI task is currently the only task that reads joystick and button GPIOs.
 - Sample and debounce up, down, left, right, joystick click, A, and B.
-- Generate pressed, released, and optional repeat events.
+- Generate pressed and released events, plus delayed repeat events for the four
+  joystick directions while they remain held.
 - Detect the system-level A+B hold gesture.
-- Send events to the UI task through a bounded FreeRTOS queue.
-- Define and report an explicit overflow policy rather than silently blocking.
+- A separate input task and bounded queue may be added if later measurement
+  shows input latency during display submission.
 
 The application manager intercepts the system gesture before dispatching input
 to the active application. Joystick click remains available to applications.
 
-### Display Service Task
+### Display Ownership
 
-- Be the only task that sends commands or pixels to the physical LCD.
-- Own the framebuffer and its transfer state.
-- Give the UI task exclusive access to an available `DisplaySurface`.
+- The UI task is the only task that renders or sends pixels to the LCD.
+- The platform display adapter owns the framebuffer and exposes one
+  `DisplaySurface` to that task.
 - Transfer submitted surfaces using blocking SPI initially.
-- Notify the UI task when the surface becomes available again.
-- Allow a future DMA implementation without changing application code.
+- A future DMA-backed display task can be introduced without changing app
+  callbacks because applications already render through `DisplaySurface`.
 
 One RGB565 framebuffer is used initially. The UI task cannot render into it
 while the display task is transferring it. This ownership protocol saves the
@@ -317,7 +335,27 @@ while the display task is transferring it. This ownership protocol saves the
 
 ### Network Service Task
 
-The network service is only compiled when the selected board provides Wi-Fi.
+The network API exists in both builds. The regular Pico implementation reports
+`Unavailable`; the Pico W implementation adds an application-owned network
+task plus two SDK-owned tasks.
+
+Runtime documentation consistently calls every FreeRTOS execution context a
+task. The relevant Pico W tasks are:
+
+- UI task: input, application callbacks, rendering, and LCD submission.
+- Network task: scan/connect/forget policy, connection snapshot, and saved
+  credentials.
+- CYW43 driver task: SDK `async_context_task` that services the host-side
+  wireless driver and moves frames to/from the CYW43439 over SPI.
+- lwIP TCP/IP task: host-side IP, DHCP, DNS, TCP, UDP, and protocol timers.
+
+lwIP itself uses the identifier `tcpip_thread` and `*_THREAD_*` configuration
+names; those upstream names remain unchanged in code. Despite that upstream
+name, `sys_thread_new()` creates it with FreeRTOS `xTaskCreate()`.
+
+The CYW43439 chip runs its own wireless firmware and handles radio and 802.11
+link-layer work. It does not run this project's lwIP stack; IP processing and
+all four tasks above execute on the RP2040.
 
 - Own CYW43 and lwIP operations.
 - Establish and monitor the Wi-Fi connection.
@@ -328,6 +366,37 @@ The network service is only compiled when the selected board provides Wi-Fi.
 
 Applications do not call CYW43 or lwIP directly. Network configuration and
 credentials are system concerns, not application state.
+
+The Settings app sends bounded scan/connect/forget commands and polls an
+immutable snapshot. Credentials are written only after a successful connection
+and occupy the final 4 KiB flash sector. The storage record has a version and
+checksum but is intentionally not encrypted.
+
+Settings also owns the system appearance preferences. The shared UI component
+uses the accent for header dividers, selection rails, keyboard focus, and other
+interaction cues. Menu labels use a lighter tint derived from the accent, while
+neutral high-contrast text, secondary text, and chrome are exposed as shared
+design tokens. Application data colors remain
+semantic and independent; for example, weather temperatures keep their own
+temperature scale while the wind-direction arrow follows the system accent.
+Success, activity, and error feedback use shared softened semantic colors
+instead of full-intensity RGB primaries. These status tokens are independent
+of the selectable accent.
+Brightness is expressed as a platform-neutral percentage and previewed through
+`display_set_brightness()`; only the board adapter maps it to a physical
+backlight implementation such as RP2040 PWM. Appearance changes are written to
+the second-to-last 4 KiB flash sector only when applied. The record is versioned
+and checksummed, supports migration from the accent-only record, and is kept
+separate from Wi-Fi credentials in the final sector.
+
+The Weather app sends a bounded refresh command to the same network task and
+polls a separate immutable weather snapshot. The network task performs DNS and
+HTTP, then incrementally parses the `wttr.in` response without retaining the
+roughly 40 KiB document. Omitting a location lets the provider infer an
+approximate location from the board's public IP; applications never perform a
+separate geolocation lookup. The weather snapshot contains current conditions
+and three daily summaries, including representative noon conditions used by
+the app's two-day forecast page.
 
 ## Input Events
 
@@ -358,10 +427,23 @@ typedef enum InputAction
 Launcher controls are:
 
 - Up/down: change selection.
-- A: start or resume the selected application.
+- Right or joystick click: start or resume the selected application.
+- A: show launcher help.
 - B: clear and restart the selected application.
-- Joystick click: show or hide launcher help.
 - Hold A+B: return to the launcher from any foreground application.
+- B in Weather, Temperature, and Settings: go back one level, or return home
+  from the app's top-level screen. B remains speed-down in Snake and delete in
+  the password editor (where an empty field lets B leave the editor).
+
+System-menu controls follow the same spatial convention: up/down changes the
+selection, right or joystick click enters/confirms, and left or B goes back.
+A and B may retain explicit screen-specific actions where needed.
+Text editors are the deliberate exception: left/right changes the character
+selection within a two-dimensional virtual keyboard and up/down changes rows.
+Joystick click activates the selected character or keyboard action, B deletes,
+and A submits the value as the keyboard's Enter action. The reusable keyboard
+provides digits, QWERTY letters, one-shot Shift, double-click Shift lock,
+symbols, and space.
 
 ## Display and Board Boundaries
 
@@ -387,6 +469,12 @@ The ST7789 driver is responsible for controller commands, address windows,
 pixel format, and pixel transfer. The Waveshare board adapter is responsible
 for GPIO assignments, panel dimensions and offsets, rotation, backlight,
 joystick, and buttons.
+
+Applications and shared UI code control backlight brightness only through a
+percentage-based function in `platform/display.h`. The Waveshare adapter maps
+that percentage to PWM on GPIO 13. A future board may map the same API to a
+different PWM channel, a display-controller command, discrete levels, or a
+no-op without changing Settings.
 
 The existing Waveshare `LCD_1in14` implementation combines these concerns. It
 will first be wrapped behind the platform API and then split only where doing
@@ -463,8 +551,11 @@ The migration should remain buildable after each phase:
 3. Split Snake into a pure engine and callback application adapter.
 4. Add the launcher, registry, state pool, and bare application lifecycle.
    **Complete.**
-5. Add the official RP2040 FreeRTOS port and service tasks.
-6. Add the Pico W network service and capability-filtered applications.
+5. Add the official RP2040 FreeRTOS port, UI task, and network task.
+   **Complete.** Dedicated input/display tasks remain optional optimizations.
+6. Add the Pico W network service, Settings app, credential persistence,
+   capability-aware disabled controls, and IP-located Weather app.
+   **Complete.**
 7. Add the independent DOOM build using the board-specific upstream port.
    **Complete.**
 

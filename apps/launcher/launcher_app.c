@@ -1,5 +1,7 @@
 #include "launcher_app.h"
 
+#include "ui.h"
+
 typedef struct LauncherState
 {
     AppContext *context;
@@ -82,9 +84,10 @@ static AppResult launcher_handle_event(
         return APP_RESULT_CONTINUE;
     }
 
-    if (event->button == INPUT_CLICK)
+    if ((event->button == INPUT_CLICK || event->button == INPUT_LEFT) &&
+        state->help_visible)
     {
-        state->help_visible = !state->help_visible;
+        state->help_visible = false;
         return APP_RESULT_REDRAW;
     }
 
@@ -103,13 +106,18 @@ static AppResult launcher_handle_event(
         move_selection(state, 1);
         return APP_RESULT_REDRAW;
     }
-    if (event->button == INPUT_A &&
+    if ((event->button == INPUT_RIGHT || event->button == INPUT_CLICK) &&
         state->context->application_count > 0 &&
         application_is_visible(state, state->selected_index))
     {
         state->context->request_launch(
             state->context->manager,
             state->selected_index);
+    }
+    else if (event->button == INPUT_A)
+    {
+        state->help_visible = true;
+        return APP_RESULT_REDRAW;
     }
     else if (event->button == INPUT_B &&
              state->context->application_count > 0 &&
@@ -126,24 +134,23 @@ static AppResult launcher_handle_event(
 static void render_help(DisplaySurface *surface)
 {
     display_clear(surface, DISPLAY_COLOR_BLACK);
-    display_draw_text(
-        surface, 8, 4, "LAUNCHER HELP",
-        DISPLAY_COLOR_GREEN, DISPLAY_COLOR_BLACK);
+    ui_draw_header(surface, "LAUNCHER HELP");
     display_draw_text(
         surface, 8, 24, "UP/DOWN  Select app",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+        ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
-        surface, 8, 42, "A        Start / resume",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+        surface, 8, 42, "RIGHT/CLICK Open app",
+        ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
-        surface, 8, 60, "B        Restart",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+        surface, 8, 60, "B           Restart",
+        ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
-        surface, 8, 78, "CLICK    Help / back",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+        surface, 8, 78, "A           Help",
+        ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
         surface, 8, 96, "A+B      Return home (from app)",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+        ui_menu_text_color(), DISPLAY_COLOR_BLACK);
+    ui_draw_footer(surface, "LEFT/CLICK:BACK");
 }
 
 static void launcher_render(const void *state_memory, DisplaySurface *surface)
@@ -156,9 +163,7 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
     }
 
     display_clear(surface, DISPLAY_COLOR_BLACK);
-    display_draw_text(
-        surface, 8, 4, "APPLICATIONS",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+    ui_draw_header(surface, "APPLICATIONS");
 
     uint16_t y = 26;
     bool has_visible_application = false;
@@ -171,23 +176,12 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
 
         has_visible_application = true;
         const bool selected = i == state->selected_index;
-        const DisplayColor color = selected
-            ? DISPLAY_COLOR_GREEN
-            : DISPLAY_COLOR_WHITE;
-        display_draw_text(
-            surface,
-            18,
-            y,
+        ui_draw_menu_item(
+            surface, y,
             state->context->applications[i]->name,
-            color,
-            DISPLAY_COLOR_BLACK);
-
-        if (selected)
-        {
-            display_draw_rectangle(
-                surface, 8, y - 4, surface->width - 9, y + 14,
-                DISPLAY_COLOR_BLUE, 2);
-        }
+            "",
+            selected,
+            true);
         y += 24;
     }
 
@@ -195,12 +189,10 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
     {
         display_draw_text(
             surface, 18, 30, "No available apps",
-            DISPLAY_COLOR_RED, DISPLAY_COLOR_BLACK);
+            ui_error_color(), DISPLAY_COLOR_BLACK);
     }
 
-    display_draw_text(
-        surface, 8, surface->height - 16, "A:OPEN  CLICK:HELP",
-        DISPLAY_COLOR_WHITE, DISPLAY_COLOR_BLACK);
+    ui_draw_footer(surface, ">/CLICK:OPEN A:HELP B:RESTART");
 }
 
 const Application launcher_application = {

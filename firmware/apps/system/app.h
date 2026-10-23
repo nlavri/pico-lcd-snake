@@ -6,6 +6,8 @@
 #include <stdint.h>
 
 #include "platform/display.h"
+#include "platform/network.h"
+#include "platform/weather.h"
 
 typedef enum AppCapability
 {
@@ -65,6 +67,8 @@ typedef struct AppContext
     uint16_t display_height;
 
     float (*read_temperature_c)(void);
+    const NetworkServiceApi *network;
+    const WeatherServiceApi *weather;
     void (*request_launch)(void *manager, size_t application_index);
     void (*request_restart)(void *manager, size_t application_index);
     void *manager;

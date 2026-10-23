@@ -2,6 +2,8 @@
 
 #define INPUT_DEBOUNCE_MS 25
 #define INPUT_HOME_HOLD_MS 750
+#define INPUT_REPEAT_DELAY_MS 350
+#define INPUT_REPEAT_INTERVAL_MS 110
 
 enum
 {
@@ -65,6 +67,39 @@ static size_t append_button_changes(
     return count;
 }
 
+static size_t append_direction_repeats(
+    uint8_t held,
+    uint32_t now_ms,
+    InputEvent events[INPUT_EVENT_BATCH_CAPACITY],
+    size_t capacity)
+{
+    static const struct
+    {
+        uint8_t mask;
+        InputButton button;
+    } directions[] = {
+        {INPUT_MASK_UP, INPUT_UP},
+        {INPUT_MASK_DOWN, INPUT_DOWN},
+        {INPUT_MASK_LEFT, INPUT_LEFT},
+        {INPUT_MASK_RIGHT, INPUT_RIGHT},
+    };
+
+    size_t count = 0;
+    for (size_t i = 0; i < sizeof(directions) / sizeof(directions[0]); i++)
+    {
+        if ((held & directions[i].mask) == 0 || count >= capacity)
+        {
+            continue;
+        }
+        events[count++] = (InputEvent){
+            .button = directions[i].button,
+            .action = INPUT_REPEAT,
+            .timestamp_ms = now_ms,
+        };
+    }
+    return count;
+}
+
 size_t input_events_update(
     InputEventSource *source,
     const PlatformInputState *input,
@@ -72,11 +107,17 @@ size_t input_events_update(
     InputEvent events[INPUT_EVENT_BATCH_CAPACITY])
 {
     const uint8_t raw_mask = input_mask(input);
+    const uint8_t direction_mask =
+        INPUT_MASK_UP | INPUT_MASK_DOWN |
+        INPUT_MASK_LEFT | INPUT_MASK_RIGHT;
     if (!source->initialized)
     {
         source->candidate_mask = raw_mask;
         source->stable_mask = raw_mask;
         source->candidate_since_ms = now_ms;
+        source->repeat_mask = raw_mask & direction_mask;
+        source->repeat_started_ms = now_ms;
+        source->repeat_last_ms = now_ms;
         source->initialized = true;
     }
 
@@ -109,6 +150,15 @@ size_t input_events_update(
             now_ms,
             events);
 
+        const uint8_t held_directions =
+            source->stable_mask & direction_mask;
+        if (held_directions != source->repeat_mask)
+        {
+            source->repeat_mask = held_directions;
+            source->repeat_started_ms = now_ms;
+            source->repeat_last_ms = now_ms;
+        }
+
         if (source->home_chord_active &&
             (source->stable_mask & home_mask) == 0)
         {
@@ -139,6 +189,20 @@ size_t input_events_update(
     {
         source->home_since_ms = 0;
         source->home_sent = false;
+    }
+
+    if (source->repeat_mask != 0 &&
+        (raw_mask & direction_mask) == source->repeat_mask &&
+        now_ms - source->repeat_started_ms >= INPUT_REPEAT_DELAY_MS &&
+        now_ms - source->repeat_last_ms >= INPUT_REPEAT_INTERVAL_MS &&
+        count < INPUT_EVENT_BATCH_CAPACITY)
+    {
+        count += append_direction_repeats(
+            source->repeat_mask,
+            now_ms,
+            events + count,
+            INPUT_EVENT_BATCH_CAPACITY - count);
+        source->repeat_last_ms = now_ms;
     }
 
     return count;

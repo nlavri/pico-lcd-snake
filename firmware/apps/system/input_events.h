@@ -16,6 +16,9 @@ typedef struct InputEventSource
     uint8_t stable_mask;
     uint32_t candidate_since_ms;
     uint32_t home_since_ms;
+    uint32_t repeat_started_ms;
+    uint32_t repeat_last_ms;
+    uint8_t repeat_mask;
     bool home_chord_active;
     bool home_sent;
     bool initialized;

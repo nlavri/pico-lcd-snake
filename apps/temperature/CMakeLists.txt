@@ -10,4 +10,5 @@ target_include_directories(temperature_app
 target_link_libraries(temperature_app
     PUBLIC
         app_framework
+        app_ui
 )
