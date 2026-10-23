@@ -1,31 +1,23 @@
 {
-  "cmake.configureOnOpen": false,
-  "cmake.statusbar.advanced": {
-    "debug" : {
-      "visibility": "hidden"
-              },    "launch" : {
-      "visibility": "hidden"
-               },
-    // "build" : {
-    //   "visibility": "hidden"
-    //            },
-    // "buildTarget" : {
-    //   "visibility": "hidden"
-    //            },
-     },
-    "cmake.buildBeforeRun": true,
-    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
-    //Change if neccessary
-    "cortex-debug.openocdPath": "c:/Projects/rpi_pico/openocd/src/openocd.exe",
-    "files.associations": {
-      "output_hal.h": "c",
-      "game.h": "c",
-      "stdint.h": "c",
-      "stdbool.h": "c",
-      "input_hal.h": "c",
-      "stdlib.h": "c",
-      "dev_config.h": "c",
-      "clocks.h": "c"
-    },
-    
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true,
+  "cmake.buildBeforeRun": true,
+  "raspberry-pi-pico.useCmakeTools": true,
+  "raspberry-pi-pico.cmakeAutoConfigure": false,
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/apps-pico/compile_commands.json",
+  "C_Cpp.intelliSenseEngine": "default",
+  "cortex-debug.openocdPath": "/opt/homebrew/bin/openocd",
+  "files.associations": {
+    "display.h": "c",
+    "input.h": "c",
+    "snake_app.h": "c",
+    "snake_game.h": "c",
+    "temperature.h": "c",
+    "time.h": "c",
+    "stdint.h": "c",
+    "stdbool.h": "c",
+    "stdlib.h": "c",
+    "dev_config.h": "c",
+    "clocks.h": "c"
+  }
 }

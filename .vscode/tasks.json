@@ -1,0 +1,119 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Pico: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "apps-pico-debug"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Doom: Configure",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}/third_party/rp2040-doom-PicoLCD",
+        "-B",
+        "${workspaceFolder}/build/doom-pico",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=MinSizeRel",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DDOOM_ENABLE_AUDIO=OFF",
+        "-DPICO_BOARD=pico",
+        "-DPICO_SDK_PATH=${env:HOME}/.pico-sdk/sdk/2.3.1",
+        "-DPICO_TOOLCHAIN_PATH=${env:HOME}/.pico-sdk/toolchain/15_2_Rel1",
+        "-DPICO_EXTRAS_PATH=${workspaceFolder}/third_party/pico-extras"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Doom: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/doom-pico",
+        "--target",
+        "doom_tiny_ST7789_240_135"
+      ],
+      "dependsOn": "Doom: Configure",
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Doom: Load game data with probe",
+      "type": "process",
+      "command": "/opt/homebrew/bin/openocd",
+      "args": [
+        "-s",
+        "/opt/homebrew/share/openocd/scripts",
+        "-f",
+        "interface/cmsis-dap.cfg",
+        "-f",
+        "target/rp2040.cfg",
+        "-c",
+        "adapter speed 5000; init; reset init; flash write_image erase ${workspaceFolder}/third_party/rp2040-doom-PicoLCD/doom1.whx 0x10041000 bin; verify_image ${workspaceFolder}/third_party/rp2040-doom-PicoLCD/doom1.whx 0x10041000 bin; reset run; shutdown"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Doom: Prepare debug",
+      "dependsOn": [
+        "Doom: Build",
+        "Doom: Load game data with probe"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Doom: Flash all with probe",
+      "type": "process",
+      "command": "/opt/homebrew/bin/openocd",
+      "args": [
+        "-s",
+        "/opt/homebrew/share/openocd/scripts",
+        "-f",
+        "interface/cmsis-dap.cfg",
+        "-f",
+        "target/rp2040.cfg",
+        "-c",
+        "adapter speed 5000; init; reset init; program ${workspaceFolder}/build/doom-pico/src/doom_tiny_ST7789_240_135.elf verify; flash write_image erase ${workspaceFolder}/third_party/rp2040-doom-PicoLCD/doom1.whx 0x10041000 bin; verify_image ${workspaceFolder}/third_party/rp2040-doom-PicoLCD/doom1.whx 0x10041000 bin; reset run; shutdown"
+      ],
+      "dependsOn": "Doom: Build",
+      "dependsOrder": "sequence",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

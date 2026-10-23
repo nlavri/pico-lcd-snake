@@ -1,0 +1,44 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "apps-common",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "PICO_SDK_PATH": "$env{HOME}/.pico-sdk/sdk/2.3.1",
+        "PICO_TOOLCHAIN_PATH": "$env{HOME}/.pico-sdk/toolchain/15_2_Rel1"
+      }
+    },
+    {
+      "name": "apps-pico-debug",
+      "displayName": "Applications - Pico (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-pico",
+      "cacheVariables": {
+        "PICO_BOARD": "pico"
+      }
+    },
+    {
+      "name": "apps-picow-debug",
+      "displayName": "Applications - Pico W (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-picow",
+      "cacheVariables": {
+        "PICO_BOARD": "pico_w"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "apps-pico-debug",
+      "configurePreset": "apps-pico-debug"
+    },
+    {
+      "name": "apps-picow-debug",
+      "configurePreset": "apps-picow-debug"
+    }
+  ]
+}

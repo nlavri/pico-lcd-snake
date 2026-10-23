@@ -1,17 +1,23 @@
 {
   "configurations": [
     {
-      "name": "Linux",
+      "name": "Pico",
       "includePath": [
         "${workspaceFolder}/**",
-        "${env:PICO_SDK_PATH}/**"
+        "${env:HOME}/.pico-sdk/sdk/2.3.1/**"
       ],
-      "defines": [],
-      //"compilerPath": "/usr/bin/arm-none-eabi-gcc",
-      "cStandard": "gnu17",
-      "cppStandard": "gnu++14",
-      "intelliSenseMode": "linux-gcc-arm",
-      "configurationProvider" : "ms-vscode.cmake-tools"
+      "compilerPath": "${env:HOME}/.pico-sdk/toolchain/15_2_Rel1/bin/arm-none-eabi-gcc",
+      "compileCommands": "${workspaceFolder}/build/apps-pico/compile_commands.json",
+      "cStandard": "gnu11",
+      "cppStandard": "gnu++17",
+      "intelliSenseMode": "gcc-arm",
+      "browse": {
+        "path": [
+          "${workspaceFolder}",
+          "${env:HOME}/.pico-sdk/sdk/2.3.1"
+        ],
+        "limitSymbolsToIncludedHeaders": true
+      }
     }
   ],
   "version": 4

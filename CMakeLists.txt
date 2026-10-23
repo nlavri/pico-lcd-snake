@@ -1,51 +1,38 @@
-# Generated Cmake Pico project file
-
 cmake_minimum_required(VERSION 3.13)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-# Initialise pico_sdk from installed location
-# (note this can come from environment, CMake cache etc)
-#set(PICO_SDK_PATH "c:/Projects/rpi_pico/pico-sdk")
+# Raspberry Pi Pico VS Code extension integration.
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.3.1)
+set(toolchainVersion 15_2_Rel1)
+set(picotoolVersion 2.3.1)
+set(picoVscode ${USERHOME}/.vscode/extensions/raspberry-pi.raspberry-pi-pico-0.23.0/scripts/pico-vscode.cmake)
+if(EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
 
-# Pull in Raspberry Pi Pico SDK (must be before project)
-include(pico_sdk_import.cmake)
+set(PICO_BOARD pico CACHE STRING "Board type")
 
-project(pico-lcd-snake C CXX ASM)
+include(cmake/pico_sdk_import.cmake)
 
-# Initialise the Raspberry Pi Pico SDK
+project(pico-lcd C CXX ASM)
+
 pico_sdk_init()
 
-# Add a compilation subdirectory
-add_subdirectory(lib/Config)
-add_subdirectory(lib/Fonts)
-add_subdirectory(lib/GUI)
-add_subdirectory(lib/LCD)
-
-
-# Add a header directory
-include_directories(./lib/Config)
-include_directories(./lib/Fonts)
-include_directories(./lib/GUI)
-include_directories(./lib/LCD)
-
-
-# Add executable. Default name is the project name, version 0.1
-
-add_executable(pico-lcd-snake main.c runtime.c output_hal.c input_hal.c game.c )
-
-pico_set_program_name(pico-lcd-snake "pico-lcd-snake")
-pico_set_program_version(pico-lcd-snake "0.1")
-
-pico_enable_stdio_uart(pico-lcd-snake 0)
-pico_enable_stdio_usb(pico-lcd-snake 1)
-
-# Add the standard library to the build
-target_link_libraries(pico-lcd-snake pico_stdlib LCD GUI Fonts Config hardware_spi)
-
-pico_add_extra_outputs(pico-lcd-snake)
-
-add_custom_command(TARGET pico-lcd-snake POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_BINARY_DIR}/pico-lcd-snake.uf2 D:/pico-lcd-snake.uf2
-)
+add_subdirectory(common)
+add_subdirectory(third_party/waveshare/Config)
+add_subdirectory(third_party/waveshare/Fonts)
+add_subdirectory(third_party/waveshare/GUI)
+add_subdirectory(third_party/waveshare/LCD)
+add_subdirectory(platform)
+add_subdirectory(firmware/apps/system)
+add_subdirectory(apps/launcher)
+add_subdirectory(apps/snake)
+add_subdirectory(apps/temperature)
+add_subdirectory(firmware/apps)
