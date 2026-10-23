@@ -1,0 +1,22 @@
+add_executable(pico-apps
+    main.c
+    system/app_registry.c
+)
+
+pico_set_program_name(pico-apps "pico-apps")
+pico_set_program_version(pico-apps "0.1")
+
+pico_enable_stdio_uart(pico-apps 0)
+pico_enable_stdio_usb(pico-apps 1)
+
+target_link_libraries(pico-apps
+    PRIVATE
+        pico_stdlib
+        app_platform
+        app_framework
+        launcher_app
+        snake_app
+        temperature_app
+)
+
+pico_add_extra_outputs(pico-apps)
