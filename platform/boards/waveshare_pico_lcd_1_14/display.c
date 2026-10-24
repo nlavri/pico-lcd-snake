@@ -6,9 +6,11 @@
 #include "DEV_Config.h"
 #include "GUI_Paint.h"
 #include "LCD_1in14.h"
+#include "rp2040/spi_dma.h"
 
 static uint16_t framebuffer[LCD_1IN14_WIDTH * LCD_1IN14_HEIGHT];
 static DisplaySurface surface;
+static bool present_active;
 
 static sFONT *waveshare_font(DisplayFont font)
 {
@@ -170,5 +172,50 @@ uint16_t display_font_height(DisplayFont font)
 
 void display_present(DisplaySurface *target)
 {
-    LCD_1IN14_Display(target->pixels);
+    while (!display_present_async(target))
+    {
+        display_present_complete();
+        tight_loop_contents();
+    }
+    while (!display_present_complete())
+    {
+        tight_loop_contents();
+    }
+}
+
+bool display_present_async(DisplaySurface *target)
+{
+    if (present_active || target == NULL)
+    {
+        return false;
+    }
+
+    LCD_1IN14_SetWindows(0, 0, target->width, target->height);
+    DEV_Digital_Write(EPD_DC_PIN, 1);
+    DEV_Digital_Write(EPD_CS_PIN, 0);
+    present_active = platform_spi_dma_start(
+        spi1,
+        (const uint8_t *)target->pixels,
+        (size_t)target->width * target->height * sizeof(uint16_t));
+    if (!present_active)
+    {
+        DEV_Digital_Write(EPD_CS_PIN, 1);
+    }
+    return true;
+}
+
+bool display_present_complete(void)
+{
+    if (!present_active)
+    {
+        return true;
+    }
+    if (!platform_spi_dma_is_complete(spi1))
+    {
+        return false;
+    }
+
+    DEV_Digital_Write(EPD_CS_PIN, 1);
+    present_active = false;
+    return true;
 }

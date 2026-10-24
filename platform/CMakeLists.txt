@@ -19,6 +19,7 @@ add_library(app_platform STATIC
     rp2040/log.c
     rp2040/network_credentials.c
     rp2040/preferences.c
+    rp2040/spi_dma.c
     rp2040/temperature.c
     rp2040/time.c
 )
@@ -27,6 +28,7 @@ target_include_directories(app_platform
     PUBLIC
         ${CMAKE_CURRENT_LIST_DIR}/include
     PRIVATE
+        ${CMAKE_CURRENT_LIST_DIR}
         ${CMAKE_SOURCE_DIR}/third_party/waveshare/Config
         ${CMAKE_SOURCE_DIR}/third_party/waveshare/Fonts
         ${CMAKE_SOURCE_DIR}/third_party/waveshare/GUI
@@ -43,6 +45,7 @@ target_link_libraries(app_platform
         GUI
         ${APP_BOARD_LIBRARIES}
         hardware_adc
+        hardware_dma
         hardware_flash
         hardware_spi
         pico_flash

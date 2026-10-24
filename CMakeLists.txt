@@ -20,6 +20,8 @@ endif()
 set(PICO_BOARD pico CACHE STRING "Board type")
 set(APP_HARDWARE "waveshare_pico_lcd_1_14" CACHE STRING
     "Application display/input hardware")
+set(APP_DISPLAY_SPI_BAUDRATE 10000000 CACHE STRING
+    "Application LCD SPI clock in Hz")
 set_property(CACHE APP_HARDWARE PROPERTY STRINGS
     waveshare_pico_lcd_1_14
     spotpear_rpi_lcd_1_54)
@@ -29,6 +31,9 @@ include(cmake/pico_sdk_import.cmake)
 project(pico-lcd C CXX ASM)
 
 pico_sdk_init()
+
+add_compile_definitions(
+    APP_DISPLAY_SPI_BAUDRATE=${APP_DISPLAY_SPI_BAUDRATE})
 
 # Application firmware runs FreeRTOS on core 0 only; core 1 never executes
 # from flash, so flash_safe_execute only needs to mask core-0 interrupts.

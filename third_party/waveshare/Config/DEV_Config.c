@@ -30,6 +30,10 @@
 #define SPI_PORT spi1
 #define I2C_PORT spi1
 
+#ifndef APP_DISPLAY_SPI_BAUDRATE
+#define APP_DISPLAY_SPI_BAUDRATE (10 * 1000 * 1000)
+#endif
+
 /******************************************************************************
 function:	Define the GPIO
 parameter:
@@ -184,7 +188,7 @@ UBYTE DEV_Module_Init(void)
     EPD_SDA_PIN    = 6;
     
     // SPI Config
-    spi_init(SPI_PORT, 10000 * 1000);
+    spi_init(SPI_PORT, APP_DISPLAY_SPI_BAUDRATE);
     gpio_set_function(EPD_CLK_PIN, GPIO_FUNC_SPI);
     gpio_set_function(EPD_MOSI_PIN, GPIO_FUNC_SPI);
     

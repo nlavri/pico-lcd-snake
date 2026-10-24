@@ -7,6 +7,7 @@
 #include "hardware/gpio.h"
 #include "hardware/spi.h"
 #include "pico/stdlib.h"
+#include "rp2040/spi_dma.h"
 
 enum
 {
@@ -17,11 +18,12 @@ enum
     LCD_CHIP_SELECT_PIN = 17,
     LCD_DATA_COMMAND_PIN = 21,
     LCD_RESET_PIN = 22,
-    LCD_SPI_BAUDRATE = 10 * 1000 * 1000,
+    LCD_SPI_BAUDRATE = APP_DISPLAY_SPI_BAUDRATE,
 };
 
 static uint16_t framebuffer[DISPLAY_WIDTH * DISPLAY_HEIGHT];
 static DisplaySurface surface;
+static bool present_active;
 
 static sFONT *waveshare_font(DisplayFont font)
 {
@@ -229,15 +231,53 @@ uint16_t display_font_height(DisplayFont font)
 
 void display_present(DisplaySurface *target)
 {
+    while (!display_present_async(target))
+    {
+        display_present_complete();
+        tight_loop_contents();
+    }
+    while (!display_present_complete())
+    {
+        tight_loop_contents();
+    }
+}
+
+bool display_present_async(DisplaySurface *target)
+{
+    if (present_active || target == NULL)
+    {
+        return false;
+    }
+
     lcd_set_window(0, 0, target->width - 1, target->height - 1);
     const uint8_t write_memory = 0x2c;
     lcd_command(write_memory, NULL, 0);
     lcd_select(true);
     gpio_put(LCD_DATA_COMMAND_PIN, 1);
     // GUI_Paint stores RGB565 in display byte order, so send raw bytes.
-    spi_write_blocking(
+    present_active = platform_spi_dma_start(
         spi0,
         (const uint8_t *)target->pixels,
         (size_t)target->width * target->height * sizeof(uint16_t));
+    if (!present_active)
+    {
+        lcd_select(false);
+    }
+    return true;
+}
+
+bool display_present_complete(void)
+{
+    if (!present_active)
+    {
+        return true;
+    }
+    if (!platform_spi_dma_is_complete(spi0))
+    {
+        return false;
+    }
+
     lcd_select(false);
+    present_active = false;
+    return true;
 }

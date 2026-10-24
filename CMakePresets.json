@@ -37,7 +37,8 @@
       "binaryDir": "${sourceDir}/build/apps-picow-spotpear",
       "cacheVariables": {
         "PICO_BOARD": "pico_w",
-        "APP_HARDWARE": "spotpear_rpi_lcd_1_54"
+        "APP_HARDWARE": "spotpear_rpi_lcd_1_54",
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000"
       }
     }
   ],

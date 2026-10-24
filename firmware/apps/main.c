@@ -57,9 +57,9 @@ static void ui_task(void *parameter)
         }
 
         app_manager_update(&manager, elapsed_ms);
-        if (app_manager_render(&manager))
+        if (display_present_complete() && app_manager_render(&manager))
         {
-            display_present(surface);
+            display_present_async(surface);
         }
 
         vTaskDelay(pdMS_TO_TICKS(5));

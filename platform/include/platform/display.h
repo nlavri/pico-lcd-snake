@@ -68,5 +68,7 @@ void display_draw_text_with_font(
 uint16_t display_text_width(const char *text, DisplayFont font);
 uint16_t display_font_height(DisplayFont font);
 void display_present(DisplaySurface *surface);
+bool display_present_async(DisplaySurface *surface);
+bool display_present_complete(void);
 
 #endif
