@@ -116,14 +116,18 @@ void st7789_init(const struct st7789_config* config, uint16_t width, uint16_t he
     }
     gpio_init(st7789_cfg.gpio_dc);
     gpio_init(st7789_cfg.gpio_rst);
-    gpio_init(st7789_cfg.gpio_bl);
+    if (st7789_cfg.gpio_bl >= 0) {
+        gpio_init(st7789_cfg.gpio_bl);
+    }
 
     if (st7789_cfg.gpio_cs > -1) {
         gpio_set_dir(st7789_cfg.gpio_cs, GPIO_OUT);
     }
     gpio_set_dir(st7789_cfg.gpio_dc, GPIO_OUT);
     gpio_set_dir(st7789_cfg.gpio_rst, GPIO_OUT);
-    gpio_set_dir(st7789_cfg.gpio_bl, GPIO_OUT);
+    if (st7789_cfg.gpio_bl >= 0) {
+        gpio_set_dir(st7789_cfg.gpio_bl, GPIO_OUT);
+    }
 
     if (st7789_cfg.gpio_cs > -1) {
         gpio_put(st7789_cfg.gpio_cs, 1);
@@ -170,7 +174,9 @@ void st7789_init(const struct st7789_config* config, uint16_t width, uint16_t he
     st7789_cmd(0x29, NULL, 0);
     sleep_ms(10);
 
-    gpio_put(st7789_cfg.gpio_bl, 1);
+    if (st7789_cfg.gpio_bl >= 0) {
+        gpio_put(st7789_cfg.gpio_bl, 1);
+    }
 }
 
 void st7789_ramwr()

@@ -1129,7 +1129,7 @@ static void weather_render(
             state->network.status == NETWORK_STATUS_CONNECTED;
         const char *message = connected
             ? weather_status_name(state->weather.status)
-            : "WI-FI OFFLINE";
+            : "Wi-Fi offline";
         DisplayColor color = ui_primary_text_color();
         if (state->weather.status == WEATHER_STATUS_LOADING)
         {

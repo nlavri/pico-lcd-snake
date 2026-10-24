@@ -37,9 +37,6 @@
 #include "d_iwad.h"
 
 #include "z_zone.h"
-#if PICO_BUILD
-#include "pico-screens/screen.h"
-#endif
 #include "w_main.h"
 #include "w_wad.h"
 #include "s_sound.h"
@@ -545,12 +542,7 @@ void D_DoomLoop (void)
 #if !NO_USE_MOUSE
     I_SetGrabMouseCallback(D_GrabMouseCallback);
 #endif
-    printf("[doom] initializing graphics\n");
     I_InitGraphics();
-    printf("[doom] graphics initialized\n");
-#if PICO_BUILD
-    I_showDiagnosticColor(0xffe0); // yellow: graphics initialized
-#endif
 #if USB_SUPPORT
     printf("Sleeping 2s for USB devices\n"); // TinyUSB still grinds to a halt during connect/disconnect
     absolute_time_t end_time = make_timeout_time_ms(2000);
@@ -560,24 +552,12 @@ void D_DoomLoop (void)
 #endif
     EnableLoadingDisk();
 
-    printf("[doom] running initial tic\n");
     TryRunTics();
-    printf("[doom] initial tic complete\n");
-#if PICO_BUILD
-    I_showDiagnosticColor(0x07ff); // cyan: initial tic completed
-#endif
 
     V_RestoreBuffer();
     R_ExecuteSetViewSize();
-#if PICO_BUILD
-    I_showDiagnosticColor(0xf81f); // magenta: renderer configured
-#endif
 
     D_StartGameLoop();
-    printf("[doom] entering game loop\n");
-#if PICO_BUILD
-    I_showDiagnosticColor(0xffff); // white: entering the main loop
-#endif
 
     if (testcontrols)
     {
@@ -587,20 +567,6 @@ void D_DoomLoop (void)
     while (1)
     {
         D_RunFrame();
-#if PICO_BUILD
-        static int last_gamestate = -1;
-        static int last_gameaction = -1;
-        static int last_menuactive = -1;
-        if ((int) gamestate != last_gamestate
-            || (int) gameaction != last_gameaction
-            || (int) menuactive != last_menuactive) {
-            printf("[state] gamestate=%d gameaction=%d menu=%d gametic=%d\n",
-                   (int) gamestate, (int) gameaction, (int) menuactive, gametic);
-            last_gamestate = (int) gamestate;
-            last_gameaction = (int) gameaction;
-            last_menuactive = (int) menuactive;
-        }
-#endif
 #if PICO_DOOM_INFO
         static uint8_t x = 0;
         if (!++x) {

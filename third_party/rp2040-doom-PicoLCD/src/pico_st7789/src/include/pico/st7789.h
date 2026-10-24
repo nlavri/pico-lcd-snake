@@ -17,7 +17,9 @@ struct st7789_config {
     int gpio_cs;
     uint gpio_dc;
     uint gpio_rst;
-    uint gpio_bl;
+    // Some HATs drive the backlight directly and expose no BL GPIO.
+    // Use -1 for those displays.
+    int gpio_bl;
 };
 
 //void loop_delay(void);

@@ -67,10 +67,6 @@ int main(int argc, char **argv)
     vreg_set_voltage(VREG_VOLTAGE_1_30);
     // todo pause? is this the cause of the cold start isue?
     set_sys_clock_khz(270000, true);
-#if !USE_PICO_NET
-    // debug ?
-//    gpio_debug_pins_init();
-#endif
 #ifdef PICO_SMPS_MODE_PIN
     gpio_init(PICO_SMPS_MODE_PIN);
     gpio_set_dir(PICO_SMPS_MODE_PIN, GPIO_OUT);
@@ -79,12 +75,9 @@ int main(int argc, char **argv)
 #endif
 #if LIB_PICO_STDIO
     stdio_init_all();
-    printf("[doom] USB console ready\n");
 #endif
 #if PICO_BUILD
-    printf("[doom] initializing platform\n");
     I_Init();
-    printf("[doom] platform initialized\n");
 #endif
 #if USE_PICO_NET
     // do init early to set pulls
@@ -108,7 +101,6 @@ int main(int argc, char **argv)
 
     // start doom
 
-    printf("[doom] starting engine\n");
     D_DoomMain ();
 
     return 0;

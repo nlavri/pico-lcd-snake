@@ -65,6 +65,14 @@
       "command": "/opt/homebrew/bin/picotool load -F -v \"${workspaceFolder}/build/doom-pico/src/doom_tiny_ST7789_240_135.uf2\" && /opt/homebrew/bin/picotool load -v -x -t bin \"${workspaceFolder}/third_party/rp2040-doom-PicoLCD/doom1.whx\" -o 0x10041000 && /usr/bin/python3 \"${workspaceFolder}/scripts/capture_pico_serial.py\" --log \"${workspaceFolder}/build/doom-pico/doom-serial.log\""
     },
     {
+      "name": "Doom SpotPear: Release via USB (keep game data)",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Doom SpotPear: Build",
+      "command": "/opt/homebrew/bin/picotool load -f -v -x \"${workspaceFolder}/build/doom-pico/src/doom_tiny_ST7789_240_240_SPOTPEAR.uf2\""
+    },
+    {
       "name": "Doom: Capture USB logs",
       "type": "node-terminal",
       "request": "launch",

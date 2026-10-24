@@ -1,28 +1,29 @@
 #include "screen.h"
-#include "hardware/gpio.h"
 
+#if ST7789_240_240_SPOTPEAR
+#include "screens/st7789_240_240_spotpear.h"
+#define SCREEN_INIT st7789_240_240_spotpear_initScreen
+#define SCREEN_FRAME_START st7789_240_240_spotpear_handleFrameStart
+#define SCREEN_SCANLINE st7789_240_240_spotpear_handleScanline
+#else
 #include "screens/st7789_240_135.h"
+#define SCREEN_INIT st7789_240_135_initScreen
+#define SCREEN_FRAME_START st7789_240_135_handleFrameStart
+#define SCREEN_SCANLINE st7789_240_135_handleScanline
+#endif
 
 void I_initScreen(void) {
-    gpio_init(PICO_DEFAULT_LED_PIN);
-    gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
-    st7789_240_135_initScreen();
+    SCREEN_INIT();
 }
 
 void I_handleFrameStart(uint8_t frame) {
-    gpio_put(PICO_DEFAULT_LED_PIN, 0);
-    st7789_240_135_handleFrameStart(frame);
+    SCREEN_FRAME_START(frame);
 }
 
 void I_handleScanline(uint16_t *line, int scanline) {
-    st7789_240_135_handleScanline(line, scanline);
+    SCREEN_SCANLINE(line, scanline);
 }
 
 void I_handleFrameEnd(uint8_t frame) {
     (void)frame;
-    gpio_put(PICO_DEFAULT_LED_PIN, 1);
-}
-
-void I_showDiagnosticColor(uint16_t color) {
-    st7789_fill(color);
 }

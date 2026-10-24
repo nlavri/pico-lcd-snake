@@ -518,19 +518,40 @@ static void pico_key_up(int scancode, int keysym, int modifiers) {
 // DOOM uses separate keys for closing the menu and returning to its parent.
 extern boolean menuactive;
 
+#ifndef DOOM_BOARD_KEY_A_PIN
+#define DOOM_BOARD_KEY_A_PIN 15
+#endif
+#ifndef DOOM_BOARD_KEY_B_PIN
+#define DOOM_BOARD_KEY_B_PIN 17
+#endif
+#ifndef DOOM_BOARD_KEY_UP_PIN
+#define DOOM_BOARD_KEY_UP_PIN 2
+#endif
+#ifndef DOOM_BOARD_KEY_DOWN_PIN
+#define DOOM_BOARD_KEY_DOWN_PIN 18
+#endif
+#ifndef DOOM_BOARD_KEY_LEFT_PIN
+#define DOOM_BOARD_KEY_LEFT_PIN 16
+#endif
+#ifndef DOOM_BOARD_KEY_RIGHT_PIN
+#define DOOM_BOARD_KEY_RIGHT_PIN 20
+#endif
+#ifndef DOOM_BOARD_KEY_CLICK_PIN
+#define DOOM_BOARD_KEY_CLICK_PIN 3
+#endif
+
 enum {
-    BOARD_KEY_A_PIN = 15,
-    BOARD_KEY_B_PIN = 17,
-    BOARD_KEY_UP_PIN = 2,
-    BOARD_KEY_DOWN_PIN = 18,
-    BOARD_KEY_LEFT_PIN = 16,
-    BOARD_KEY_RIGHT_PIN = 20,
-    BOARD_KEY_CLICK_PIN = 3,
+    BOARD_KEY_A_PIN = DOOM_BOARD_KEY_A_PIN,
+    BOARD_KEY_B_PIN = DOOM_BOARD_KEY_B_PIN,
+    BOARD_KEY_UP_PIN = DOOM_BOARD_KEY_UP_PIN,
+    BOARD_KEY_DOWN_PIN = DOOM_BOARD_KEY_DOWN_PIN,
+    BOARD_KEY_LEFT_PIN = DOOM_BOARD_KEY_LEFT_PIN,
+    BOARD_KEY_RIGHT_PIN = DOOM_BOARD_KEY_RIGHT_PIN,
+    BOARD_KEY_CLICK_PIN = DOOM_BOARD_KEY_CLICK_PIN,
     BOARD_KEY_DEBOUNCE_US = 15000,
 };
 
 typedef struct {
-    const char *name;
     int scancode;
     bool observed;
     bool pressed;
@@ -538,15 +559,15 @@ typedef struct {
 } board_key_t;
 
 static board_key_t board_keys[] = {
-    { "up", SDL_SCANCODE_UP, false, false, 0 },
-    { "down", SDL_SCANCODE_DOWN, false, false, 0 },
-    { "left", SDL_SCANCODE_LEFT, false, false, 0 },
-    { "right", SDL_SCANCODE_RIGHT, false, false, 0 },
-    { "click/enter", SDL_SCANCODE_RETURN, false, false, 0 },
-    { "A/fire", SDL_SCANCODE_RCTRL, false, false, 0 },
-    { "B/use", SDL_SCANCODE_SPACE, false, false, 0 },
-    { "B/back", SDL_SCANCODE_BACKSPACE, false, false, 0 },
-    { "A+B/menu", SDL_SCANCODE_ESCAPE, false, false, 0 },
+    { SDL_SCANCODE_UP, false, false, 0 },
+    { SDL_SCANCODE_DOWN, false, false, 0 },
+    { SDL_SCANCODE_LEFT, false, false, 0 },
+    { SDL_SCANCODE_RIGHT, false, false, 0 },
+    { SDL_SCANCODE_RETURN, false, false, 0 },
+    { SDL_SCANCODE_RCTRL, false, false, 0 },
+    { SDL_SCANCODE_SPACE, false, false, 0 },
+    { SDL_SCANCODE_ESCAPE, false, false, 0 },
+    { SDL_SCANCODE_ESCAPE, false, false, 0 },
 };
 
 static void board_input_init_pin(uint pin)
@@ -571,8 +592,6 @@ static void board_input_update_key(board_key_t *key, bool observed, uint32_t now
     if (key->pressed != key->observed
         && (uint32_t)(now - key->changed_at) >= BOARD_KEY_DEBOUNCE_US) {
         key->pressed = key->observed;
-        printf("[input] %s %s\n", key->name,
-               key->pressed ? "pressed" : "released");
         if (key->pressed) {
             pico_key_down(key->scancode, 0, 0);
         } else {

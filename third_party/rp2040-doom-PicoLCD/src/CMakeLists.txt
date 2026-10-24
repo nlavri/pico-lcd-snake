@@ -460,8 +460,6 @@ target_compile_definitions(small_doom_common INTERFACE
         PICO_NO_TIMING_DEMO=1
         NO_USE_EXIT=1 # not sure whether we have an exit... if so what does it need to do?
 
-        PICO_DEBUG_PIN_BASE=18
-        PICO_DEBUG_PIN_COUNT=2
 )
 
 target_compile_options(small_doom_common INTERFACE
@@ -486,10 +484,13 @@ function(add_doom_tiny SUFFIX SCREEN)
             musx_decoder.c
             image_decoder.c
             )
-    if (NOT SCREEN STREQUAL "ST7789_240_135")
-        message(FATAL_ERROR "This vendored port only supports the Pico-LCD-1.14 ST7789 display")
+    if (SCREEN STREQUAL "ST7789_240_135")
+        target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7789_240_135.c)
+    elseif (SCREEN STREQUAL "ST7789_240_240_SPOTPEAR")
+        target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7789_240_240_spotpear.c)
+    else()
+        message(FATAL_ERROR "Unsupported Pico ST7789 display: ${SCREEN}")
     endif()
-    target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7789_240_135.c)
     target_link_libraries(doom_tiny${SUFFIX} PRIVATE pico_st7789 hardware_spi)
     target_include_directories(doom_tiny${SUFFIX} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../")
     target_link_libraries(doom_tiny${SUFFIX} PRIVATE doom ${EXTRA_LIBS})
@@ -668,4 +669,23 @@ target_compile_definitions(doom_tiny_ST7789_240_135 PRIVATE
 )
 pico_enable_stdio_usb(doom_tiny_ST7789_240_135 1)
 pico_enable_stdio_uart(doom_tiny_ST7789_240_135 0)
+
+add_doom_tiny(_ST7789_240_240_SPOTPEAR ST7789_240_240_SPOTPEAR)
+target_link_libraries(doom_tiny_ST7789_240_240_SPOTPEAR PRIVATE tiny_settings)
+target_compile_definitions(doom_tiny_ST7789_240_240_SPOTPEAR PRIVATE
+    TINY_WAD_ADDR=0x10041000
+    DOWNSAMPLING_FACTOR_OUT_OF_100=133
+    PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=5000
+    DOOM_BOARD_KEY_A_PIN=7
+    DOOM_BOARD_KEY_B_PIN=8
+    # The HAT labels the switch contact, which is opposite the direction in
+    # which the joystick cap is pushed.
+    DOOM_BOARD_KEY_UP_PIN=3
+    DOOM_BOARD_KEY_DOWN_PIN=2
+    DOOM_BOARD_KEY_LEFT_PIN=5
+    DOOM_BOARD_KEY_RIGHT_PIN=4
+    DOOM_BOARD_KEY_CLICK_PIN=6
+)
+pico_enable_stdio_usb(doom_tiny_ST7789_240_240_SPOTPEAR 1)
+pico_enable_stdio_uart(doom_tiny_ST7789_240_240_SPOTPEAR 0)
 

@@ -81,6 +81,25 @@
       "problemMatcher": "$gcc"
     },
     {
+      "label": "Doom SpotPear: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/doom-pico",
+        "--target",
+        "doom_tiny_ST7789_240_240_SPOTPEAR"
+      ],
+      "dependsOn": "Doom: Configure",
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
       "label": "Doom: Load game data with probe",
       "type": "process",
       "command": "/opt/homebrew/bin/openocd",

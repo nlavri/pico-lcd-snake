@@ -26,9 +26,4 @@ extern "C"
 #endif
 void I_handleScanline(uint16_t *line, int scanline);
 
-#ifdef __cplusplus
-extern "C"
-#endif
-void I_showDiagnosticColor(uint16_t color);
-
 #endif
