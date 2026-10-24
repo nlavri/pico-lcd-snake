@@ -58,3 +58,4 @@ build/*
 
 # Local Wi-Fi provisioning values; never commit credentials.
 firmware/apps/network_defaults.local.h
+apps/ssh/ssh_defaults.local.h

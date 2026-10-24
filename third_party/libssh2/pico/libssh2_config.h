@@ -1,0 +1,14 @@
+#ifndef PICO_LCD_LIBSSH2_CONFIG_H
+#define PICO_LCD_LIBSSH2_CONFIG_H
+
+#define HAVE_GETTIMEOFDAY 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_SNPRINTF 1
+#define HAVE_STRTOLL 1
+#define HAVE_SYS_TIME_H 1
+#define HAVE_UNISTD_H 1
+
+#define HAVE_SELECT 1
+#define HAVE_FIONBIO 1
+
+#endif

@@ -1,7 +1,8 @@
 # Pico LCD applications
 
 Small FreeRTOS application firmware for Raspberry Pi Pico and Pico W with a
-launcher, Snake game, onboard-temperature display, Weather, and Settings apps.
+launcher, Calculator, Snake game, onboard-temperature display, Weather, SSH,
+and Settings apps.
 
 The application firmware supports the Waveshare Pico LCD 1.14 and the
 SpotPear 1.54-inch Game LCD HAT used through the project's Pico wiring adapter.
@@ -60,6 +61,11 @@ The Temperature app samples the RP2040 internal sensor twice per second. Its
 large reading moves through a violet, blue, cyan, green, yellow, orange, and red
 color spectrum as the measured temperature rises.
 
+The Calculator app supports decimal numbers, unary signs, parentheses, and the
+usual `+`, `-`, `*`, and `/` precedence. Move over its keypad with the joystick
+and click to press a key. A evaluates from anywhere, B deletes one character,
+and B on an empty expression returns to the launcher.
+
 The Weather app is available on Pico W after Wi-Fi is connected. It makes one
 asynchronous request to `wttr.in`, which chooses the approximate location from
 the Pico's public IP address. Its three cyclic pages show current conditions
@@ -70,6 +76,22 @@ joystick left or right to switch pages and press A to refresh; no API key or
 location setting is required.
 Weather remains available when the Pico W is offline: it reports the Wi-Fi or
 internet state and automatically requests data after Wi-Fi connects.
+
+The SSH app is available only on Pico W. It provides a compact password-based
+terminal over Wi-Fi: enter a host name or IPv4 address, user, and password,
+then inspect and explicitly accept the server's SHA-256 host-key fingerprint.
+The Host row is initially prefilled with `192.168.100.7` for local testing and
+remains editable through the virtual keyboard.
+Click in the terminal to open the shared virtual keyboard and submit one line
+at a time. Passwords are kept only for the current connection attempt and are
+not saved to flash or written to logs. Host fingerprints are not persisted in
+this first version, so every new connection must be accepted explicitly.
+
+The SSH transport uses a pinned local copy of libssh2 1.11.1 with a small
+Pico-specific lwIP/Mbed TLS adapter. The firmware build disables legacy
+ciphers, compression, file-transfer features, and unused libssh2 modules; the
+vendored sources and BSD license remain in `third_party/libssh2` so the build
+does not depend on the upstream repository remaining available.
 
 ## Wi-Fi settings
 
@@ -111,8 +133,15 @@ For a locally preconfigured network, copy
 is ignored by Git. Saved credentials take priority; when none exist, the
 firmware tries the local default and stores it after a successful connection.
 
-On Pico W, FreeRTOS runs four relevant tasks on RP2040 core 0: the UI task, the
-application-owned network task, the SDK-owned CYW43 driver task
-(`async_context_task`), and the SDK-owned lwIP TCP/IP task. The last is named
-`tcpip_thread` by lwIP, but is created as a FreeRTOS task. The CYW43439 chip
-handles radio and 802.11 work; lwIP and application networking run on RP2040.
+For local SSH test defaults, copy
+`apps/ssh/ssh_defaults.local.example.h` to
+`apps/ssh/ssh_defaults.local.h` and fill in the host, username, and password.
+The local file is ignored by Git and the password stays masked in the UI. These
+values are compiled into the local firmware image, so use only disposable test
+credentials and do not distribute that build artifact.
+
+On Pico W, FreeRTOS runs the UI task, the application-owned network and SSH
+tasks, the SDK-owned CYW43 driver task (`async_context_task`), and the SDK-owned
+lwIP TCP/IP task on RP2040 core 0. The last is named `tcpip_thread` by lwIP, but
+is created as a FreeRTOS task. The CYW43439 chip handles radio and 802.11 work;
+lwIP and application networking run on RP2040.

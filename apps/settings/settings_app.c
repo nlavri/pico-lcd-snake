@@ -9,6 +9,7 @@
 #define SETTINGS_REFRESH_INTERVAL_MS 200
 #define SETTINGS_VISIBLE_NETWORKS 4
 #define SETTINGS_VISIBLE_ACCENTS 5
+#define SETTINGS_TALL_DISPLAY_HEIGHT 200
 
 typedef enum SettingsMenuItem
 {
@@ -522,12 +523,24 @@ static void render_menu(
 
 static void render_brightness(DisplaySurface *surface)
 {
+    const bool tall_display =
+        surface->height >= SETTINGS_TALL_DISPLAY_HEIGHT;
+    const uint16_t meter_top = tall_display ? 27 : 25;
+    const uint16_t meter_step = tall_display ? 19 : 9;
+    const uint16_t segment_height = tall_display ? 15 : 7;
+    const uint16_t value_y = tall_display
+        ? (uint16_t)(
+            meter_top +
+            (meter_step * 10 -
+                display_font_height(DISPLAY_FONT_MEDIUM)) / 2)
+        : 55;
+
     char value[8];
     snprintf(value, sizeof(value), "%u%%", ui_brightness());
     display_draw_text_with_font(
         surface,
         126,
-        55,
+        value_y,
         value,
         DISPLAY_FONT_MEDIUM,
         ui_menu_text_color(),
@@ -538,14 +551,14 @@ static void render_brightness(DisplaySurface *surface)
     for (uint8_t i = 0; i < 10; i++)
     {
         const uint8_t level = (uint8_t)(10 - i);
-        const uint16_t y = (uint16_t)(25 + i * 9);
+        const uint16_t y = (uint16_t)(meter_top + i * meter_step);
         const bool active = level <= active_segments;
         display_draw_rectangle(
             surface,
             91,
             y,
             113,
-            y + 6,
+            (uint16_t)(y + segment_height - 1),
             active ? ui_accent_color() : ui_chrome_color(),
             active ? 3 : 1);
     }
@@ -556,12 +569,18 @@ static void render_accent_selection(
     const SettingsState *state,
     DisplaySurface *surface)
 {
-    const size_t end = state->first_visible_accent + SETTINGS_VISIBLE_ACCENTS <
-            UI_ACCENT_COUNT
-        ? state->first_visible_accent + SETTINGS_VISIBLE_ACCENTS
+    const bool tall_display =
+        surface->height >= SETTINGS_TALL_DISPLAY_HEIGHT;
+    const size_t first = tall_display ? 0 : state->first_visible_accent;
+    const size_t visible_count = tall_display
+        ? UI_ACCENT_COUNT
+        : SETTINGS_VISIBLE_ACCENTS;
+    const size_t end = first + visible_count < UI_ACCENT_COUNT
+        ? first + visible_count
         : UI_ACCENT_COUNT;
-    uint16_t y = 26;
-    for (size_t i = state->first_visible_accent; i < end; i++)
+    uint16_t y = tall_display ? 29 : 26;
+    const uint16_t row_height = tall_display ? 23 : 19;
+    for (size_t i = first; i < end; i++)
     {
         const UiAccent accent = (UiAccent)i;
         ui_draw_menu_item(
@@ -579,7 +598,7 @@ static void render_accent_selection(
             y + 10,
             ui_accent_palette_color(accent),
             4);
-        y += 19;
+        y = (uint16_t)(y + row_height);
     }
     ui_draw_footer(surface, "UP/DN:PREVIEW CLICK:SAVE B:BACK");
 }

@@ -46,6 +46,33 @@
       "command": "/opt/homebrew/bin/picotool load -f -x \"${workspaceFolder}/build/apps-picow-spotpear/firmware/apps/pico-apps.uf2\""
     },
     {
+      "name": "Pico W SpotPear: Debug with probe",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/apps-picow-spotpear/firmware/apps/pico-apps.elf",
+      "request": "launch",
+      "type": "cortex-debug",
+      "preLaunchTask": "Pico W SpotPear: Build",
+      "servertype": "openocd",
+      "gdbPath": "/opt/homebrew/bin/arm-none-eabi-gdb",
+      "device": "RP2040",
+      "configFiles": [
+        "interface/cmsis-dap.cfg",
+        "target/rp2040.cfg"
+      ],
+      "svdFile": "${env:HOME}/.pico-sdk/sdk/2.3.1/src/rp2040/hardware_regs/RP2040.svd",
+      "runToEntryPoint": "main",
+      "overrideLaunchCommands": [
+        "monitor reset init",
+        "load \"${workspaceFolder}/build/apps-picow-spotpear/firmware/apps/pico-apps.elf\""
+      ],
+      "openOCDLaunchCommands": [
+        "adapter speed 2000"
+      ],
+      "searchDir": [
+        "/opt/homebrew/share/openocd/scripts"
+      ]
+    },
+    {
       "name": "Pico: Debug with probe",
       "cwd": "${workspaceFolder}",
       "executable": "${command:cmake.launchTargetPath}",

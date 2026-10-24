@@ -225,6 +225,7 @@ bool app_manager_init(
     uint32_t available_capabilities,
     float (*read_temperature_c)(void),
     const NetworkServiceApi *network,
+    const SshServiceApi *ssh,
     const WeatherServiceApi *weather)
 {
     if (manager == NULL || surface == NULL || launcher == NULL ||
@@ -243,6 +244,7 @@ bool app_manager_init(
         .display_height = surface->height,
         .read_temperature_c = read_temperature_c,
         .network = network,
+        .ssh = ssh,
         .weather = weather,
         .request_launch = request_launch,
         .request_restart = request_restart,

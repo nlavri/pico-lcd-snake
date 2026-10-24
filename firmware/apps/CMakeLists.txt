@@ -16,9 +16,12 @@ target_link_libraries(pico-apps
         app_platform
         app_framework
         app_ui
+        calculator_app
         launcher_app
         network_service
         settings_app
+        ssh_app
+        ssh_service
         snake_app
         temperature_app
         weather_app

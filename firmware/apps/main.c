@@ -10,6 +10,7 @@
 #include "input_events.h"
 #include "launcher_app.h"
 #include "network_service.h"
+#include "ssh_service.h"
 #include "platform/display.h"
 #include "platform/input.h"
 #include "platform/log.h"
@@ -135,6 +136,7 @@ int main(void)
             capabilities,
             platform_temperature_read_c,
             network_service_api(),
+            ssh_service_api(),
             weather_service_api()))
     {
         LOG_ERROR("main", "application manager initialization failed");
@@ -144,6 +146,12 @@ int main(void)
     if (!network_service_start())
     {
         LOG_ERROR("main", "network service task creation failed");
+        return enter_usb_bootloader();
+    }
+
+    if (!ssh_service_start())
+    {
+        LOG_ERROR("main", "SSH service task creation failed");
         return enter_usb_bootloader();
     }
 

@@ -122,6 +122,7 @@ int main(void)
         APP_CAP_DISPLAY | APP_CAP_INPUT,
         NULL,
         NULL,
+        NULL,
         NULL));
     assert(app_manager_active_application(&manager) == &launcher);
 

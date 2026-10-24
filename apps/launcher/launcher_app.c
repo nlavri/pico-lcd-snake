@@ -166,6 +166,7 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
     ui_draw_header(surface, "APPLICATIONS");
 
     uint16_t y = 26;
+    const uint16_t row_spacing = surface->height >= 200 ? 28 : 20;
     bool has_visible_application = false;
     for (size_t i = 0; i < state->context->application_count; i++)
     {
@@ -182,7 +183,7 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
             "",
             selected,
             true);
-        y += 24;
+        y += row_spacing;
     }
 
     if (!has_visible_application)

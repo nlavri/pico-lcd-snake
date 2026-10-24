@@ -72,7 +72,9 @@ pico-lcd-snake/
 │   │           ├── display_service.c
 │   │           ├── display_service.h
 │   │           ├── network_service.c
-│   │           └── network_service.h
+│   │           ├── network_service.h
+│   │           ├── ssh_service.c
+│   │           └── ssh_service.h
 │   │
 │   └── doom/
 │       ├── CMakeLists.txt
@@ -81,6 +83,11 @@ pico-lcd-snake/
 │       └── README.md
 │
 ├── apps/
+│   ├── calculator/
+│   │   ├── calculator_app.c
+│   │   ├── calculator_app.h
+│   │   ├── calculator_engine.c
+│   │   └── calculator_engine.h
 │   ├── launcher/
 │   │   ├── launcher_app.c
 │   │   └── launcher_app.h
@@ -92,6 +99,9 @@ pico-lcd-snake/
 │   ├── settings/
 │   │   ├── settings_app.c
 │   │   └── settings_app.h
+│   ├── ssh/
+│   │   ├── ssh_app.c
+│   │   └── ssh_app.h
 │   ├── temperature/
 │   │   ├── temperature_app.c
 │   │   └── temperature_app.h
@@ -109,6 +119,7 @@ pico-lcd-snake/
 │   │   ├── display.h
 │   │   ├── input.h
 │   │   ├── network.h
+│   │   ├── ssh.h
 │   │   ├── temperature.h
 │   │   ├── weather.h
 │   │   └── time.h
@@ -135,6 +146,7 @@ pico-lcd-snake/
 │
 ├── third_party/
 │   ├── FreeRTOS-Kernel/
+│   ├── libssh2/
 │   ├── waveshare/
 │   └── rp2040-doom-PicoLCD/
 │
@@ -164,12 +176,16 @@ pico-lcd-snake/
  Weather ── refresh request ────────┤              lwIP TCP/IP task
      ▲                              │
      └──── weather snapshot ────────┘
+
+ SSH app ── bounded commands ──▶ SSH task ────────────┘
+    ▲                              │
+    └── terminal/status snapshot ──┘
 ```
 
 FreeRTOS is configured with `configNUMBER_OF_CORES=1` and its scheduler is
-started on RP2040 core 0. Consequently the UI, network, CYW43 driver, and lwIP
-TCP/IP tasks all execute on core 0. Core 1 is not launched and remains available
-for later display, audio, or other measured performance work.
+started on RP2040 core 0. Consequently the UI, network, SSH, CYW43 driver, and
+lwIP TCP/IP tasks all execute on core 0. Core 1 is not launched and remains
+available for later display, audio, or other measured performance work.
 
 ## Application Model
 
@@ -239,8 +255,8 @@ APP_CAP_WIFI
 ```
 
 Settings is included in both builds. It requires only display and input, so a
-regular Pico shows the app but renders its Wi-Fi item disabled. Weather requires
-`APP_CAP_WIFI`, so the launcher omits it from a regular Pico.
+regular Pico shows the app but renders its Wi-Fi item disabled. Weather and SSH
+require `APP_CAP_WIFI`, so the launcher omits them from a regular Pico.
 
 ### Application State
 
@@ -248,7 +264,7 @@ The manager owns one fixed, correctly aligned state pool. Each registered
 application receives a stable slice sized from its `state_size`:
 
 ```c
-#define APP_STATE_POOL_SIZE 8192
+#define APP_STATE_POOL_SIZE 4096
 
 static max_align_t app_state_pool[
     APP_STATE_POOL_SIZE / sizeof(max_align_t)
@@ -348,6 +364,8 @@ task. The relevant Pico W tasks are:
 - UI task: input, application callbacks, rendering, and LCD submission.
 - Network task: scan/connect/forget policy, connection snapshot, and saved
   credentials.
+- SSH task: libssh2 session ownership, password authentication, and terminal
+  channel I/O.
 - CYW43 driver task: SDK `async_context_task` that services the host-side
   wireless driver and moves frames to/from the CYW43439 over SPI.
 - lwIP TCP/IP task: host-side IP, DHCP, DNS, TCP, UDP, and protocol timers.
@@ -401,6 +419,24 @@ separate geolocation lookup. The weather snapshot contains current conditions
 and three daily summaries, including representative noon conditions used by
 the app's two-day forecast page.
 
+### SSH Service Task
+
+The Pico W SSH app talks only to the platform-neutral `SshServiceApi`. It sends
+bounded connect, host-verification, line-input, and disconnect commands and
+polls an immutable status/terminal snapshot. A dedicated FreeRTOS task owns the
+TCP socket, libssh2 session, and channel so DNS, handshake, authentication, and
+remote reads never block the UI task.
+
+libssh2 1.11.1 is pinned and vendored locally. Its Pico adapter maps sockets to
+lwIP, randomness and cryptography to the Pico SDK's Mbed TLS integration, and
+temporary allocation to the FreeRTOS heap. The compiled profile keeps password
+authentication, ECDH/RSA/ECDSA host negotiation, AES-CTR, and ChaCha20-Poly1305,
+while disabling compression, legacy ciphers and hashes, file transfer, agent,
+and known-host modules. The app displays the SHA-256 host-key fingerprint and
+requires explicit acceptance on every new connection; persistent known-host
+storage is intentionally deferred. Passwords are cleared after the connection
+attempt and are never written to flash or logs.
+
 ## Input Events
 
 The platform-independent input model represents both the control and its
@@ -435,8 +471,9 @@ Launcher controls are:
 - B: clear and restart the selected application.
 - Hold A+B: return to the launcher from any foreground application.
 - B in Weather, Temperature, and Settings: go back one level, or return home
-  from the app's top-level screen. B remains speed-down in Snake and delete in
-  the password editor (where an empty field lets B leave the editor).
+  from the app's top-level screen. B remains speed-down in Snake and acts as
+  delete in Calculator and the password editor (where an empty field lets B
+  leave the editor).
 
 System-menu controls follow the same spatial convention: up/down changes the
 selection, right or joystick click enters/confirms, and left or B goes back.
@@ -517,6 +554,14 @@ snake_game.c
 
 `snake_game.c` must not include FreeRTOS, Pico SDK, Waveshare, or ST7789
 headers. Its behavior should be testable as a normal host executable.
+
+## Calculator Boundary
+
+Calculator follows the same engine/adapter split. `calculator_engine.c` owns
+number parsing, unary signs, parentheses, and operator precedence without any
+display, Pico SDK, or FreeRTOS dependency. `calculator_app.c` owns the
+responsive keypad, input mapping, persistent expression state, and rendering.
+The pure engine is covered by a normal host-side test executable.
 
 ## DOOM Boundary
 

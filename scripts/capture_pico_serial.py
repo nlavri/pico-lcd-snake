@@ -74,6 +74,8 @@ def main() -> int:
                     sys.stdout.buffer.write(data)
                     sys.stdout.buffer.flush()
                 except OSError as error:
+                    if error.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+                        continue
                     if error.errno not in (errno.EBADF, errno.EIO, errno.ENODEV, errno.ENXIO):
                         raise
                     os.close(fd)

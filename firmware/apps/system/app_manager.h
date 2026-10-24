@@ -7,7 +7,7 @@
 
 #include "app.h"
 
-#define APP_STATE_POOL_SIZE 8192
+#define APP_STATE_POOL_SIZE 4096
 #define APP_MANAGER_MAX_APPLICATIONS 8
 
 typedef union AppStatePool
@@ -46,6 +46,7 @@ bool app_manager_init(
     uint32_t available_capabilities,
     float (*read_temperature_c)(void),
     const NetworkServiceApi *network,
+    const SshServiceApi *ssh,
     const WeatherServiceApi *weather);
 
 void app_manager_handle_event(AppManager *manager, const InputEvent *event);

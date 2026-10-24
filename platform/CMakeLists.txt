@@ -14,6 +14,7 @@ endif()
 
 add_library(app_platform STATIC
     network.c
+    ssh.c
     weather.c
     ${APP_BOARD_SOURCES}
     rp2040/log.c

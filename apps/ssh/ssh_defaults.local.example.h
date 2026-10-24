@@ -1,0 +1,8 @@
+#ifndef PICO_LCD_SSH_DEFAULTS_LOCAL_H
+#define PICO_LCD_SSH_DEFAULTS_LOCAL_H
+
+#define PICO_LCD_DEFAULT_SSH_HOST "192.168.100.7"
+#define PICO_LCD_DEFAULT_SSH_USERNAME "your-test-user"
+#define PICO_LCD_DEFAULT_SSH_PASSWORD "your-test-password"
+
+#endif
