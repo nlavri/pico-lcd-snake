@@ -18,6 +18,11 @@ if(EXISTS ${picoVscode})
 endif()
 
 set(PICO_BOARD pico CACHE STRING "Board type")
+set(APP_HARDWARE "waveshare_pico_lcd_1_14" CACHE STRING
+    "Application display/input hardware")
+set_property(CACHE APP_HARDWARE PROPERTY STRINGS
+    waveshare_pico_lcd_1_14
+    spotpear_rpi_lcd_1_54)
 
 include(cmake/pico_sdk_import.cmake)
 

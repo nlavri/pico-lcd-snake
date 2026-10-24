@@ -29,6 +29,16 @@
       "cacheVariables": {
         "PICO_BOARD": "pico_w"
       }
+    },
+    {
+      "name": "apps-picow-spotpear-debug",
+      "displayName": "Applications - Pico W + SpotPear 1.54 (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-picow-spotpear",
+      "cacheVariables": {
+        "PICO_BOARD": "pico_w",
+        "APP_HARDWARE": "spotpear_rpi_lcd_1_54"
+      }
     }
   ],
   "buildPresets": [
@@ -39,6 +49,10 @@
     {
       "name": "apps-picow-debug",
       "configurePreset": "apps-picow-debug"
+    },
+    {
+      "name": "apps-picow-spotpear-debug",
+      "configurePreset": "apps-picow-spotpear-debug"
     }
   ]
 }

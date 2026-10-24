@@ -30,6 +30,22 @@
       "command": "cmake --build --preset apps-picow-debug && /opt/homebrew/bin/picotool load -f -x \"${workspaceFolder}/build/apps-picow/firmware/apps/pico-apps.uf2\""
     },
     {
+      "name": "Pico W SpotPear: Build only",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Pico W SpotPear: Build",
+      "command": "echo SpotPear application firmware built"
+    },
+    {
+      "name": "Pico W SpotPear: Upload via USB (no debug)",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Pico W SpotPear: Build",
+      "command": "/opt/homebrew/bin/picotool load -f -x \"${workspaceFolder}/build/apps-picow-spotpear/firmware/apps/pico-apps.uf2\""
+    },
+    {
       "name": "Pico: Debug with probe",
       "cwd": "${workspaceFolder}",
       "executable": "${command:cmake.launchTargetPath}",

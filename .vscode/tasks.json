@@ -37,6 +37,38 @@
       "problemMatcher": "$gcc"
     },
     {
+      "label": "Pico W SpotPear: Configure",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "apps-picow-spotpear-debug"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Pico W SpotPear: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "apps-picow-spotpear-debug"
+      ],
+      "dependsOn": "Pico W SpotPear: Configure",
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
       "label": "Doom: Configure",
       "type": "process",
       "command": "cmake",

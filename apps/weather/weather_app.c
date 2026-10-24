@@ -581,20 +581,31 @@ static void draw_wind_row(
 static void draw_graphic_sun(
     DisplaySurface *surface,
     int x,
-    int y)
+    int y,
+    int scale)
 {
     const DisplayColor yellow = weather_rgb565(255, 224, 75);
     const DisplayColor orange = weather_rgb565(255, 159, 28);
-    draw_filled_rectangle(surface, x + 30, y + 9, 4, 7, yellow);
-    draw_filled_rectangle(surface, x + 30, y + 32, 4, 7, yellow);
-    draw_filled_rectangle(surface, x + 17, y + 22, 7, 4, yellow);
-    draw_filled_rectangle(surface, x + 40, y + 22, 7, 4, yellow);
-    draw_filled_rectangle(surface, x + 21, y + 13, 5, 4, yellow);
-    draw_filled_rectangle(surface, x + 38, y + 13, 5, 4, yellow);
-    draw_filled_rectangle(surface, x + 21, y + 31, 5, 4, yellow);
-    draw_filled_rectangle(surface, x + 38, y + 31, 5, 4, yellow);
-    draw_filled_circle(surface, x + 32, y + 24, 9, orange);
-    draw_filled_circle(surface, x + 32, y + 24, 6, yellow);
+    draw_filled_rectangle(surface, x + 30 * scale, y + 9 * scale,
+                          4 * scale, 7 * scale, yellow);
+    draw_filled_rectangle(surface, x + 30 * scale, y + 32 * scale,
+                          4 * scale, 7 * scale, yellow);
+    draw_filled_rectangle(surface, x + 17 * scale, y + 22 * scale,
+                          7 * scale, 4 * scale, yellow);
+    draw_filled_rectangle(surface, x + 40 * scale, y + 22 * scale,
+                          7 * scale, 4 * scale, yellow);
+    draw_filled_rectangle(surface, x + 21 * scale, y + 13 * scale,
+                          5 * scale, 4 * scale, yellow);
+    draw_filled_rectangle(surface, x + 38 * scale, y + 13 * scale,
+                          5 * scale, 4 * scale, yellow);
+    draw_filled_rectangle(surface, x + 21 * scale, y + 31 * scale,
+                          5 * scale, 4 * scale, yellow);
+    draw_filled_rectangle(surface, x + 38 * scale, y + 31 * scale,
+                          5 * scale, 4 * scale, yellow);
+    draw_filled_circle(surface, x + 32 * scale, y + 24 * scale,
+                       9 * scale, orange);
+    draw_filled_circle(surface, x + 32 * scale, y + 24 * scale,
+                       6 * scale, yellow);
 }
 
 static void draw_graphic_cloud(
@@ -602,67 +613,87 @@ static void draw_graphic_cloud(
     int x,
     int y,
     DisplayColor front,
-    DisplayColor back)
+    DisplayColor back,
+    int scale)
 {
-    draw_filled_circle(surface, x + 18, y + 22, 10, back);
-    draw_filled_circle(surface, x + 31, y + 16, 14, back);
-    draw_filled_circle(surface, x + 45, y + 22, 11, back);
-    draw_filled_rectangle(surface, x + 16, y + 20, 33, 15, back);
-    draw_filled_circle(surface, x + 17, y + 20, 9, front);
-    draw_filled_circle(surface, x + 30, y + 14, 12, front);
-    draw_filled_circle(surface, x + 44, y + 21, 9, front);
-    draw_filled_rectangle(surface, x + 15, y + 20, 34, 11, front);
+    draw_filled_circle(surface, x + 18 * scale, y + 22 * scale,
+                       10 * scale, back);
+    draw_filled_circle(surface, x + 31 * scale, y + 16 * scale,
+                       14 * scale, back);
+    draw_filled_circle(surface, x + 45 * scale, y + 22 * scale,
+                       11 * scale, back);
+    draw_filled_rectangle(surface, x + 16 * scale, y + 20 * scale,
+                          33 * scale, 15 * scale, back);
+    draw_filled_circle(surface, x + 17 * scale, y + 20 * scale,
+                       9 * scale, front);
+    draw_filled_circle(surface, x + 30 * scale, y + 14 * scale,
+                       12 * scale, front);
+    draw_filled_circle(surface, x + 44 * scale, y + 21 * scale,
+                       9 * scale, front);
+    draw_filled_rectangle(surface, x + 15 * scale, y + 20 * scale,
+                          34 * scale, 11 * scale, front);
 }
 
 static void draw_graphic_rain(
     DisplaySurface *surface,
     int x,
-    int y)
+    int y,
+    int scale)
 {
     const DisplayColor cyan = weather_rgb565(32, 221, 255);
     const int drops[] = {17, 29, 41};
     for (size_t i = 0; i < sizeof(drops) / sizeof(drops[0]); i++)
     {
-        draw_filled_rectangle(surface, x + drops[i], y + 31, 3, 7, cyan);
-        draw_filled_rectangle(surface, x + drops[i] - 2, y + 37, 3, 4, cyan);
+        draw_filled_rectangle(surface, x + drops[i] * scale, y + 31 * scale,
+                              3 * scale, 7 * scale, cyan);
+        draw_filled_rectangle(surface, x + (drops[i] - 2) * scale,
+                              y + 37 * scale, 3 * scale, 4 * scale, cyan);
     }
 }
 
 static void draw_graphic_snow(
     DisplaySurface *surface,
     int x,
-    int y)
+    int y,
+    int scale)
 {
     const int flakes[] = {18, 31, 44};
     for (size_t i = 0; i < sizeof(flakes) / sizeof(flakes[0]); i++)
     {
         draw_filled_rectangle(
-            surface, x + flakes[i] - 1, y + 32,
-            3, 9, DISPLAY_COLOR_WHITE);
+            surface, x + (flakes[i] - 1) * scale, y + 32 * scale,
+            3 * scale, 9 * scale, DISPLAY_COLOR_WHITE);
         draw_filled_rectangle(
-            surface, x + flakes[i] - 4, y + 35,
-            9, 3, DISPLAY_COLOR_WHITE);
+            surface, x + (flakes[i] - 4) * scale, y + 35 * scale,
+            9 * scale, 3 * scale, DISPLAY_COLOR_WHITE);
     }
 }
 
 static void draw_graphic_lightning(
     DisplaySurface *surface,
     int x,
-    int y)
+    int y,
+    int scale)
 {
     const DisplayColor violet = weather_rgb565(168, 85, 247);
-    draw_filled_rectangle(surface, x + 31, y + 26, 8, 4, violet);
-    draw_filled_rectangle(surface, x + 28, y + 30, 8, 4, violet);
-    draw_filled_rectangle(surface, x + 25, y + 34, 8, 4, violet);
-    draw_filled_rectangle(surface, x + 27, y + 38, 5, 3, violet);
-    draw_filled_rectangle(surface, x + 24, y + 41, 5, 4, violet);
+    draw_filled_rectangle(surface, x + 31 * scale, y + 26 * scale,
+                          8 * scale, 4 * scale, violet);
+    draw_filled_rectangle(surface, x + 28 * scale, y + 30 * scale,
+                          8 * scale, 4 * scale, violet);
+    draw_filled_rectangle(surface, x + 25 * scale, y + 34 * scale,
+                          8 * scale, 4 * scale, violet);
+    draw_filled_rectangle(surface, x + 27 * scale, y + 38 * scale,
+                          5 * scale, 3 * scale, violet);
+    draw_filled_rectangle(surface, x + 24 * scale, y + 41 * scale,
+                          5 * scale, 4 * scale, violet);
 }
 
 static void draw_graphic_weather(
     DisplaySurface *surface,
     int x,
     int y,
-    uint16_t code)
+    uint16_t code,
+    int scale)
 {
     const WeatherIcon icon = weather_icon_for_code(code);
     const DisplayColor gray_dark = weather_rgb565(63, 74, 82);
@@ -670,25 +701,28 @@ static void draw_graphic_weather(
     const DisplayColor gray_light = weather_rgb565(183, 192, 197);
     if (icon == WEATHER_ICON_CLEAR)
     {
-        draw_graphic_sun(surface, x, y);
+        draw_graphic_sun(surface, x, y, scale);
         return;
     }
     if (icon == WEATHER_ICON_PARTLY_CLOUDY)
     {
-        draw_graphic_sun(surface, x - 11, y - 8);
+        draw_graphic_sun(surface, x - 11 * scale, y - 8 * scale, scale);
         draw_graphic_cloud(
-            surface, x + 7, y + 7,
-            gray_light, gray_dark);
+            surface, x + 7 * scale, y + 7 * scale,
+            gray_light, gray_dark, scale);
         return;
     }
     if (icon == WEATHER_ICON_FOG)
     {
         draw_graphic_cloud(
-            surface, x + 2, y - 2,
-            gray_mid, gray_dark);
-        draw_filled_rectangle(surface, x + 7, y + 31, 48, 3, gray_light);
-        draw_filled_rectangle(surface, x + 13, y + 38, 42, 3, gray_light);
-        draw_filled_rectangle(surface, x + 7, y + 45, 48, 3, gray_light);
+            surface, x + 2 * scale, y - 2 * scale,
+            gray_mid, gray_dark, scale);
+        draw_filled_rectangle(surface, x + 7 * scale, y + 31 * scale,
+                              48 * scale, 3 * scale, gray_light);
+        draw_filled_rectangle(surface, x + 13 * scale, y + 38 * scale,
+                              42 * scale, 3 * scale, gray_light);
+        draw_filled_rectangle(surface, x + 7 * scale, y + 45 * scale,
+                              48 * scale, 3 * scale, gray_light);
         return;
     }
     if (icon == WEATHER_ICON_THUNDER)
@@ -696,30 +730,30 @@ static void draw_graphic_weather(
         const DisplayColor electric_blue = weather_rgb565(22, 140, 255);
         const DisplayColor blue_shadow = weather_rgb565(18, 62, 118);
         draw_graphic_cloud(
-            surface, x + 2, y + 1,
-            electric_blue, blue_shadow);
-        draw_graphic_lightning(surface, x, y);
+            surface, x + 2 * scale, y + 1 * scale,
+            electric_blue, blue_shadow, scale);
+        draw_graphic_lightning(surface, x, y, scale);
         return;
     }
     if (icon == WEATHER_ICON_SNOW)
     {
         draw_graphic_cloud(
-            surface, x + 2, y + 1,
-            gray_light, gray_dark);
-        draw_graphic_snow(surface, x, y);
+            surface, x + 2 * scale, y + 1 * scale,
+            gray_light, gray_dark, scale);
+        draw_graphic_snow(surface, x, y, scale);
         return;
     }
     if (icon == WEATHER_ICON_RAIN)
     {
         draw_graphic_cloud(
-            surface, x + 2, y + 1,
-            gray_mid, gray_dark);
-        draw_graphic_rain(surface, x, y);
+            surface, x + 2 * scale, y + 1 * scale,
+            gray_mid, gray_dark, scale);
+        draw_graphic_rain(surface, x, y, scale);
         return;
     }
     draw_graphic_cloud(
-        surface, x + 2, y + 6,
-        gray_light, gray_dark);
+        surface, x + 2 * scale, y + 6 * scale,
+        gray_light, gray_dark, scale);
 }
 
 typedef struct WeatherAsciiGlyph
@@ -830,7 +864,7 @@ static void draw_themed_weather(
 {
     if (theme == WEATHER_THEME_GRAPHICS)
     {
-        draw_graphic_weather(surface, x, y, code);
+        draw_graphic_weather(surface, x, y, code, 1);
     }
     else
     {
@@ -842,10 +876,179 @@ static void compact_condition(
     const char *condition,
     char output[16]);
 
+static bool use_expanded_layout(const DisplaySurface *surface)
+{
+    return surface->height >= 200;
+}
+
+static void draw_ascii_weather_expanded(
+    DisplaySurface *surface,
+    uint16_t x,
+    uint16_t y,
+    uint16_t width,
+    uint16_t code)
+{
+    const WeatherAsciiGlyph glyph = weather_ascii_glyph(code);
+    const DisplayFont font = DISPLAY_FONT_COMPACT;
+    const uint16_t line_height = display_font_height(font);
+    for (size_t i = 0; i < sizeof(glyph.lines) / sizeof(glyph.lines[0]); i++)
+    {
+        const uint16_t line_width = display_text_width(glyph.lines[i], font);
+        const uint16_t line_x = line_width < width
+            ? (uint16_t)(x + (width - line_width) / 2)
+            : x;
+        display_draw_text_with_font(
+            surface,
+            line_x,
+            y + (uint16_t)i * line_height,
+            glyph.lines[i],
+            font,
+            glyph.colors[i],
+            DISPLAY_COLOR_BLACK);
+    }
+}
+
+static void draw_themed_weather_expanded(
+    DisplaySurface *surface,
+    WeatherTheme theme,
+    uint16_t code)
+{
+    if (theme == WEATHER_THEME_GRAPHICS)
+    {
+        draw_graphic_weather(surface, 4, 43, code, 2);
+    }
+    else
+    {
+        draw_ascii_weather_expanded(surface, 4, 43, 132, code);
+    }
+}
+
+enum
+{
+    EXPANDED_CONDITION_LINE_CAPACITY = 15,
+};
+
+typedef struct ExpandedCondition
+{
+    char first[EXPANDED_CONDITION_LINE_CAPACITY];
+    char second[EXPANDED_CONDITION_LINE_CAPACITY];
+} ExpandedCondition;
+
+static ExpandedCondition expanded_condition(const char *condition)
+{
+    ExpandedCondition result = {0};
+    const size_t maximum = EXPANDED_CONDITION_LINE_CAPACITY - 1;
+    const size_t length = strlen(condition);
+    if (length <= maximum)
+    {
+        snprintf(result.first, sizeof(result.first), "%s", condition);
+        return result;
+    }
+
+    size_t split = maximum;
+    while (split > 0 && condition[split] != ' ')
+    {
+        split--;
+    }
+    if (split == 0)
+    {
+        split = maximum;
+    }
+    snprintf(result.first, sizeof(result.first), "%.*s", (int)split, condition);
+
+    const char *remainder = condition + split;
+    while (*remainder == ' ')
+    {
+        remainder++;
+    }
+    snprintf(result.second, sizeof(result.second), "%.*s",
+             (int)maximum, remainder);
+    return result;
+}
+
+static void draw_expanded_condition(
+    DisplaySurface *surface,
+    uint16_t x,
+    uint16_t y,
+    const char *condition)
+{
+    const ExpandedCondition lines = expanded_condition(condition);
+    display_draw_text(
+        surface, x, y, lines.first,
+        ui_neutral_text_color(), DISPLAY_COLOR_BLACK);
+    if (lines.second[0] != '\0')
+    {
+        display_draw_text(
+            surface, x, y + display_font_height(DISPLAY_FONT_SMALL),
+            lines.second,
+            ui_neutral_text_color(), DISPLAY_COLOR_BLACK);
+    }
+}
+
+static void render_current_expanded(
+    const WeatherAppState *state,
+    DisplaySurface *surface)
+{
+    char location[34];
+    char temperature[16];
+    char feels[16];
+    char humidity[16];
+    char visibility[24];
+    snprintf(location, sizeof(location), "%.33s", state->weather.location);
+    snprintf(temperature, sizeof(temperature), "%d C",
+             state->weather.temperature_c);
+    snprintf(feels, sizeof(feels), "%d C", state->weather.feels_like_c);
+    snprintf(humidity, sizeof(humidity), "%u%%",
+             state->weather.humidity_percent);
+    snprintf(visibility, sizeof(visibility), "Visibility  %u km",
+             state->weather.visibility_km);
+
+    display_draw_text(
+        surface, 8, 22, location,
+        ui_secondary_text_color(), DISPLAY_COLOR_BLACK);
+    draw_themed_weather_expanded(
+        surface, state->theme, state->weather.condition_code);
+
+    const uint16_t data_x = 140;
+    draw_expanded_condition(
+        surface, data_x, 43, state->weather.condition);
+    display_draw_text_with_font(
+        surface, data_x, 72, temperature, DISPLAY_FONT_LARGE,
+        weather_temperature_color(state->weather.temperature_c),
+        DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 106, "FEELS", DISPLAY_FONT_SMALL,
+        ui_chrome_color(), DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 120, feels, DISPLAY_FONT_COMPACT,
+        weather_temperature_color(state->weather.feels_like_c),
+        DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 143, "HUMIDITY", DISPLAY_FONT_SMALL,
+        ui_chrome_color(), DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 157, humidity, DISPLAY_FONT_COMPACT,
+        ui_secondary_text_color(), DISPLAY_COLOR_BLACK);
+
+    draw_wind_row(
+        surface, state->theme, 12, 184,
+        state->weather.wind_direction,
+        state->weather.wind_speed_kmph);
+    display_draw_text(
+        surface, 12, 205, visibility,
+        ui_secondary_text_color(), DISPLAY_COLOR_BLACK);
+}
+
 static void render_current(
     const WeatherAppState *state,
     DisplaySurface *surface)
 {
+    if (use_expanded_layout(surface))
+    {
+        render_current_expanded(state, surface);
+        return;
+    }
+
     char temperature[16];
     char condition[16];
     char details[28];
@@ -1017,6 +1220,59 @@ static void render_forecast_day(
         day->wind_speed_kmph);
 }
 
+static void render_forecast_day_expanded(
+    DisplaySurface *surface,
+    WeatherTheme theme,
+    const WeatherForecastDay *day,
+    const char *heading)
+{
+    char date[6] = "--/--";
+    char heading_and_date[24];
+    char minimum[12];
+    char maximum[12];
+    char rain[20];
+    if (day->date[4] == '-' && day->date[7] == '-')
+    {
+        date[0] = day->date[8];
+        date[1] = day->date[9];
+        date[2] = '/';
+        date[3] = day->date[5];
+        date[4] = day->date[6];
+    }
+    snprintf(heading_and_date, sizeof(heading_and_date),
+             "%s  %s", heading, date);
+    snprintf(minimum, sizeof(minimum), "%d C", day->minimum_c);
+    snprintf(maximum, sizeof(maximum), "%d C", day->maximum_c);
+    snprintf(rain, sizeof(rain), "Rain  %u%%", day->rain_chance_percent);
+
+    display_draw_text(
+        surface, 8, 22, heading_and_date,
+        ui_secondary_text_color(), DISPLAY_COLOR_BLACK);
+    draw_themed_weather_expanded(surface, theme, day->condition_code);
+
+    const uint16_t data_x = 140;
+    draw_expanded_condition(surface, data_x, 43, day->condition);
+    display_draw_text_with_font(
+        surface, data_x, 74, "LOW", DISPLAY_FONT_SMALL,
+        ui_chrome_color(), DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 88, minimum, DISPLAY_FONT_LARGE,
+        weather_temperature_color(day->minimum_c), DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 122, "HIGH", DISPLAY_FONT_SMALL,
+        ui_chrome_color(), DISPLAY_COLOR_BLACK);
+    display_draw_text_with_font(
+        surface, data_x, 136, maximum, DISPLAY_FONT_LARGE,
+        weather_temperature_color(day->maximum_c), DISPLAY_COLOR_BLACK);
+
+    display_draw_text(
+        surface, 12, 177, rain,
+        ui_secondary_text_color(), DISPLAY_COLOR_BLACK);
+    draw_wind_row(
+        surface, theme, 12, 203,
+        day->wind_direction, day->wind_speed_kmph);
+}
+
 static void render_forecast_page(
     const WeatherAppState *state,
     DisplaySurface *surface,
@@ -1037,11 +1293,22 @@ static void render_forecast_page(
             DISPLAY_COLOR_BLACK);
         return;
     }
-    render_forecast_day(
-        surface,
-        state->theme,
-        &state->weather.forecast[forecast_index],
-        page == 1 ? "TOMORROW" : "+2 DAYS");
+    if (use_expanded_layout(surface))
+    {
+        render_forecast_day_expanded(
+            surface,
+            state->theme,
+            &state->weather.forecast[forecast_index],
+            page == 1 ? "TOMORROW" : "+2 DAYS");
+    }
+    else
+    {
+        render_forecast_day(
+            surface,
+            state->theme,
+            &state->weather.forecast[forecast_index],
+            page == 1 ? "TOMORROW" : "+2 DAYS");
+    }
 }
 
 static void render_weather_header(
@@ -1066,7 +1333,7 @@ static void render_weather_settings(
     ui_draw_header(surface, "WEATHER SETTINGS");
     ui_draw_menu_item(
         surface,
-        38,
+        use_expanded_layout(surface) ? 48 : 38,
         "Themes",
         weather_theme_name(state->theme),
         true,
@@ -1084,7 +1351,7 @@ static void render_theme_selection(
         const WeatherTheme theme = (WeatherTheme)i;
         ui_draw_menu_item(
             surface,
-            38 + (uint16_t)i * 28,
+            (use_expanded_layout(surface) ? 48 : 38) + (uint16_t)i * 32,
             weather_theme_name(theme),
             theme == state->theme ? "Active" : "",
             theme == state->selected_theme,
@@ -1142,7 +1409,7 @@ static void weather_render(
         display_draw_text_with_font(
             surface,
             centered_x(surface, message, DISPLAY_FONT_MEDIUM),
-            55,
+            use_expanded_layout(surface) ? 96 : 55,
             message,
             DISPLAY_FONT_MEDIUM,
             color,
@@ -1153,7 +1420,7 @@ static void weather_render(
             display_draw_text(
                 surface,
                 centered_x(surface, hint, DISPLAY_FONT_SMALL),
-                82,
+                use_expanded_layout(surface) ? 128 : 82,
                 hint,
                 ui_secondary_text_color(),
                 DISPLAY_COLOR_BLACK);

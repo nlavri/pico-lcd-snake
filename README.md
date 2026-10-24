@@ -3,7 +3,8 @@
 Small FreeRTOS application firmware for Raspberry Pi Pico and Pico W with a
 launcher, Snake game, onboard-temperature display, Weather, and Settings apps.
 
-[1.14inch LCD Display Module](https://www.waveshare.com/wiki/Pico-LCD-1.14) is used both as output display and input joystick.
+The application firmware supports the Waveshare Pico LCD 1.14 and the
+SpotPear 1.54-inch Game LCD HAT used through the project's Pico wiring adapter.
 
 The planned multi-application FreeRTOS and standalone DOOM structure is
 documented in [docs/architecture/README.md](docs/architecture/README.md).
@@ -26,10 +27,16 @@ For Pico W, use the `apps-picow-debug` preset instead. The UF2 outputs are
 `build/apps-picow/firmware/apps/pico-apps.uf2`. Hold BOOTSEL while connecting
 the board for the first flash, then copy the matching UF2 to `RPI-RP2`.
 
+For a Pico W wired to the SpotPear display, use
+`apps-picow-spotpear-debug`. Its UF2 is
+`build/apps-picow-spotpear/firmware/apps/pico-apps.uf2`.
+
 After the first flash, VS Code's Run and Debug panel provides two workflows:
 
 - `Pico: Upload via USB (no debug)` builds, uploads with `picotool`, and runs.
 - `Pico W: Upload via USB (no debug)` does the same using the Pico W build.
+- `Pico W SpotPear: Upload via USB (no debug)` builds and uploads the 240 x 240
+  SpotPear variant.
 - `Pico: Debug with probe` builds, uploads over SWD, and starts GDB.
 
 The standalone no-audio DOOM firmware has its own `Doom: Build`,
@@ -94,7 +101,9 @@ and weather-condition colors, remain independent.
 
 Settings -> Brightness controls the display backlight from 10% to 100% in 10%
 steps. Up/down previews the level, click saves it, and left restores the
-previous value. Brightness is stored with the accent preference.
+previous value. Brightness is stored with the accent preference. The directly
+wired SpotPear HAT does not expose a backlight-control pin, so this setting is
+retained but cannot change that display's brightness.
 
 For a locally preconfigured network, copy
 `firmware/apps/network_defaults.local.example.h` to

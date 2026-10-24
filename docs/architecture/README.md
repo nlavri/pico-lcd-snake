@@ -32,6 +32,7 @@ firmware has separate board variants.
 | --- | --- | --- | --- |
 | `apps-pico-debug` | Pico | Launcher and local applications | `build/apps-pico/` |
 | `apps-picow-debug` | Pico W | Launcher, local applications, and Wi-Fi services | `build/apps-picow/` |
+| `apps-picow-spotpear-debug` | Pico W + SpotPear 1.54 | Same applications on the 240 x 240 HAT | `build/apps-picow-spotpear/` |
 | `doom-pico-release` | Pico | Specialized standalone DOOM firmware | `build/doom-pico/` |
 
 The DOOM target uses a release-oriented configuration because its code size,
@@ -116,11 +117,13 @@ pico-lcd-snake/
 │   │   ├── platform_init.c
 │   │   ├── temperature_rp2040.c
 │   │   └── time_rp2040.c
-│   └── boards/waveshare_pico_lcd_1_14/
-│       ├── board.c
-│       ├── board.h
-│       ├── display.c
-│       └── input.c
+│   └── boards/
+│       ├── waveshare_pico_lcd_1_14/
+│       │   ├── display.c
+│       │   └── input.c
+│       └── spotpear_rpi_lcd_1_54/
+│           ├── display.c
+│           └── input.c
 │
 ├── drivers/
 │   ├── st7789/
