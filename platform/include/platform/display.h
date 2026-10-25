@@ -36,6 +36,36 @@ bool display_init(void);
 void display_set_brightness(uint8_t percent);
 DisplaySurface *display_acquire_surface(void);
 void display_clear(DisplaySurface *surface, DisplayColor color);
+void display_fill_rectangle(
+    DisplaySurface *surface,
+    int x,
+    int y,
+    int width,
+    int height,
+    DisplayColor color);
+void display_blit_indexed(
+    DisplaySurface *surface,
+    int x,
+    int y,
+    const uint8_t *pixels,
+    uint16_t width,
+    uint16_t height,
+    const DisplayColor *palette,
+    uint8_t palette_size,
+    uint8_t transparent_index,
+    bool flip_x);
+void display_blit_indexed_scaled(
+    DisplaySurface *surface,
+    int x,
+    int y,
+    const uint8_t *pixels,
+    uint16_t width,
+    uint16_t height,
+    const DisplayColor *palette,
+    uint8_t palette_size,
+    uint8_t transparent_index,
+    bool flip_x,
+    uint8_t scale);
 void display_draw_point(
     DisplaySurface *surface,
     uint16_t x,

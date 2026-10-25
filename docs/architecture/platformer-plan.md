@@ -30,6 +30,7 @@ Measurements are from the current debug ELF files and source layout.
 | App state pool | 4 KiB | All enabled app states share this fixed pool; measure the remaining aligned capacity before registering the game |
 | Waveshare framebuffer | 240 x 135 x 16-bit = 64.8 KiB | Keep the existing single framebuffer |
 | SpotPear framebuffer | 240 x 240 x 16-bit = 115.2 KiB | Avoid any second framebuffer or large render cache |
+| Waveshare LCD SPI clock | 62.5 MHz | DMA full-frame upload measured 9.881-9.893 ms at 240 x 135, clean during moving Snake gameplay |
 | SpotPear LCD SPI clock | 62.5 MHz | DMA full-frame upload measured 19.223 ms at 240 x 240, clean during moving Snake gameplay |
 | UI task cadence | nominal 5 ms | A blocking full-screen upload currently dominates the frame time |
 | Inputs | joystick, click, A, B | Enough for move, jump, attack, and pause/interact |
@@ -124,43 +125,54 @@ rendering support:
    to `DisplaySurface.pixels` instead of calling the point primitive per pixel.
 2. Add `display_present_region()` so menus, HUD updates, and mostly-static
    scenes can submit dirty rectangles.
-3. The SpotPear path now uses a board-specific 62.5 MHz preset, verified clean
-   during moving gameplay. Keep the other display preset conservative until it
-   is tested on its own hardware.
+3. Both display paths now use board-specific 62.5 MHz presets, verified clean
+   during moving gameplay on their respective hardware.
 4. DMA-backed asynchronous submission is now implemented. Rendering waits for
    the previous transfer before modifying the single framebuffer, while the CPU
    remains available to FreeRTOS and Pico W services during transmission.
-5. Instrument render time, present time, missed simulation ticks, minimum
-   FreeRTOS heap, and stack high-water marks in a diagnostic build.
+5. The launcher benchmark now instruments CPU render time. On the RP2040
+   Waveshare build, the scrolling tile map, parallax background, HUD, player,
+   and eight animated indexed sprites render in about 13.5 ms, with 13.872 ms
+   maximum observed. Still add end-to-end frame cadence, missed simulation
+   ticks, minimum FreeRTOS heap, and stack high-water marks.
 
 At 30 full frames per second, raw RGB565 payload requires about 15.6 Mbit/s for
-240 x 135 and 27.6 Mbit/s for 240 x 240, before command overhead. This makes a
-The tested SpotPear path sustains a measured 19.223 ms full-frame submission,
-or about 52 observed full frames/s. Keep simulation at 60 Hz and initially cap
-rendering near 50 Hz; dirty regions can reduce bandwidth for mostly-static
-scenes.
+240 x 135 and 27.6 Mbit/s for 240 x 240, before command overhead. The tested
+Waveshare path completes a full-frame submission in 9.881-9.893 ms when polled
+promptly, while the tested SpotPear path completes one in 19.223 ms. Keep
+simulation at 60 Hz and initially cap rendering near 50 Hz; dirty regions can
+reduce bandwidth for mostly-static scenes.
 
-Use a common 240 x 135 gameplay viewport. On the 240 x 240 display, place that
-viewport consistently and use the additional area for HUD/status art rather
-than changing collision or level geometry. This keeps captures, tests, and
-future multiplayer behaviour consistent between displays.
+Use a common 240-pixel-wide world and preserve identical collision and level
+coordinates on both displays. The 240 x 240 display may expose more vertical
+scenery by shifting the same terrain downward; this changes visibility, not
+simulation. Keep gameplay tests and future multiplayer behaviour independent
+of the physical viewport height.
 
 ## Build strategy
 
-Add two independent CMake options rather than immediately forking the product:
+Two independent CMake options gate the optional features without forking the
+product:
 
 ```cmake
 option(APP_ENABLE_PLATFORMER "Include the platformer app" ON)
 option(APP_ENABLE_SSH "Include SSH support" ON)
 ```
 
-The regular Pico and Pico W presets should initially enable the platformer. Add
-a release-oriented game preset only if measurements require it:
+The regular Pico and Pico W presets enable both features. SpotPear uses two
+mutually focused debug presets because its 115.2 KiB framebuffer leaves little
+static SRAM:
 
 | Preset | Contents | When to use |
 | --- | --- | --- |
-| existing app presets | launcher, platformer, SSH/network where supported | Default development and expected final product |
-| `game-picow-release` | launcher, platformer, multiplayer networking; SSH/weather optionally off | Only if RAM, flash, or scheduling margins fail |
+| existing Pico/Pico W presets | launcher, platformer, SSH/network where supported | Default development |
+| `apps-picow-spotpear-debug` | platformer and network/weather; SSH omitted | SpotPear game development; about 13.0 KiB static SRAM margin |
+| `apps-picow-spotpear-ssh-debug` | SSH and network/weather; platformer omitted | SpotPear SSH testing; about 7.8 KiB static SRAM margin |
+
+The platformer itself adds no separate BSS: its small mutable state lives in
+the existing app pool and its art lives in flash. Therefore omitting it saves
+flash but essentially no static SRAM; omitting SSH recovers about 5.2 KiB of
+static SRAM by removing its service state.
 
 Set explicit build gates rather than deciding from intuition:
 
@@ -221,13 +233,20 @@ simpler and has bounded memory use.
 
 ## Delivery milestones
 
-### 0. Prove the display budget (DMA/SPI baseline complete)
+### 0. Prove the display budget (benchmark complete)
 
-The SpotPear full-frame transport baseline is complete: asynchronous DMA at
-62.5 MHz transfers 115,200 bytes in 19.223 ms and was visually clean during
-moving Snake gameplay. Remaining work is a scrolling tile-and-sprite benchmark,
-direct indexed blits, dirty regions, and equivalent testing on the Waveshare
-hardware.
+The full-frame transport baseline is complete on both displays. At 62.5 MHz,
+asynchronous DMA transfers 64,800 bytes to the Waveshare panel in 9.881-9.893
+ms and 115,200 bytes to the SpotPear panel in 19.223 ms; both were visually
+clean during moving Snake gameplay. Dirty-region submission remains the main
+unfinished display experiment.
+
+The first two remaining items are now implemented as `Platformer Demo` in the
+existing launcher. On the 240 x 135 RP2040 target, a full procedural tile scene
+with parallax, HUD, and eight animated indexed sprites rendered in about 13.5
+ms (13.872 ms maximum observed) and remained visually clean. A single
+framebuffer prevents CPU rendering from overlapping the active DMA transfer,
+so dirty-region submission or targeted renderer improvements remain valuable.
 
 ### 1. Host-tested game kernel
 
@@ -254,8 +273,8 @@ loss, reordering, disconnect, and mismatched protocol versions.
 
 ## First implementation slice
 
-The next code change should add a host-testable indexed blitter and an on-device
-benchmark app that scrolls a small tile map with several animated sprites. SPI,
-DMA, and the SpotPear full-frame baseline are settled; the experiment now needs
-to settle dirty-region policy and real tile/sprite render cost before those
-choices become embedded throughout the game code.
+This slice is complete: the host-tested indexed blitter and on-device launcher
+benchmark scroll a procedural tile map with parallax and eight animated
+sprites. SPI, DMA, and full-frame baselines are settled, and real render cost is
+recorded above. The next slice should build the host-tested fixed-step game
+kernel while dirty-region support is evaluated separately.

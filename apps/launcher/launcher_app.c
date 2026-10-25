@@ -6,6 +6,7 @@ typedef struct LauncherState
 {
     AppContext *context;
     size_t selected_index;
+    size_t first_visible_row;
     bool help_visible;
 } LauncherState;
 
@@ -14,6 +15,32 @@ static bool application_is_visible(const LauncherState *state, size_t index)
     return app_is_available(
         state->context->applications[index],
         state->context->available_capabilities);
+}
+
+static size_t visible_row_count(const LauncherState *state)
+{
+    return state->context->display_height >= 200 ? 6 : 5;
+}
+
+static size_t selected_visible_row(const LauncherState *state)
+{
+    size_t row = 0;
+    for (size_t i = 0; i < state->selected_index; i++)
+    {
+        if (application_is_visible(state, i))
+        {
+            row++;
+        }
+    }
+    return row;
+}
+
+static void keep_selection_visible(LauncherState *state)
+{
+    state->first_visible_row = ui_list_first_visible(
+        selected_visible_row(state),
+        state->first_visible_row,
+        visible_row_count(state));
 }
 
 static bool select_first_application(LauncherState *state)
@@ -53,6 +80,7 @@ static void move_selection(LauncherState *state, int direction)
         if (application_is_visible(state, candidate))
         {
             state->selected_index = candidate;
+            keep_selection_visible(state);
             return;
         }
     }
@@ -63,6 +91,7 @@ static bool launcher_start(void *state_memory, AppContext *context)
     LauncherState *state = state_memory;
     state->context = context;
     state->selected_index = 0;
+    state->first_visible_row = 0;
     state->help_visible = false;
     select_first_application(state);
     return true;
@@ -168,6 +197,8 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
     uint16_t y = 26;
     const uint16_t row_spacing = surface->height >= 200 ? 28 : 20;
     bool has_visible_application = false;
+    size_t visible_row = 0;
+    const size_t maximum_rows = visible_row_count(state);
     for (size_t i = 0; i < state->context->application_count; i++)
     {
         if (!application_is_visible(state, i))
@@ -176,6 +207,14 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
         }
 
         has_visible_application = true;
+        if (visible_row++ < state->first_visible_row)
+        {
+            continue;
+        }
+        if (visible_row > state->first_visible_row + maximum_rows)
+        {
+            break;
+        }
         const bool selected = i == state->selected_index;
         ui_draw_menu_item(
             surface, y,

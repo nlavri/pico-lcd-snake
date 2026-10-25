@@ -3,6 +3,14 @@ add_executable(pico-apps
     system/app_registry.c
 )
 
+set(optional_app_libraries)
+if(APP_ENABLE_PLATFORMER)
+    list(APPEND optional_app_libraries platformer_demo_app)
+endif()
+if(APP_ENABLE_SSH)
+    list(APPEND optional_app_libraries ssh_app ssh_service)
+endif()
+
 pico_set_program_name(pico-apps "pico-apps")
 pico_set_program_version(pico-apps "0.1")
 
@@ -20,11 +28,10 @@ target_link_libraries(pico-apps
         launcher_app
         network_service
         settings_app
-        ssh_app
-        ssh_service
         snake_app
         temperature_app
         weather_app
+        ${optional_app_libraries}
 )
 
 pico_add_extra_outputs(pico-apps)

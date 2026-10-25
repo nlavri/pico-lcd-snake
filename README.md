@@ -1,8 +1,8 @@
 # Pico LCD applications
 
 Small FreeRTOS application firmware for Raspberry Pi Pico and Pico W with a
-launcher, Calculator, Snake game, onboard-temperature display, Weather, SSH,
-and Settings apps.
+launcher, Calculator, Snake game, a scrolling Platformer Demo,
+onboard-temperature display, Weather, SSH, and Settings apps.
 
 The application firmware supports the Waveshare Pico LCD 1.14 and the
 SpotPear 1.54-inch Game LCD HAT used through the project's Pico wiring adapter.
@@ -28,9 +28,16 @@ For Pico W, use the `apps-picow-debug` preset instead. The UF2 outputs are
 `build/apps-picow/firmware/apps/pico-apps.uf2`. Hold BOOTSEL while connecting
 the board for the first flash, then copy the matching UF2 to `RPI-RP2`.
 
-For a Pico W wired to the SpotPear display, use
-`apps-picow-spotpear-debug`. Its UF2 is
-`build/apps-picow-spotpear/firmware/apps/pico-apps.uf2`.
+For a Pico W wired to the SpotPear display, choose one memory-focused preset:
+
+- `apps-picow-spotpear-debug` includes Platformer Demo and omits SSH. Its UF2
+  is `build/apps-picow-spotpear/firmware/apps/pico-apps.uf2`.
+- `apps-picow-spotpear-ssh-debug` includes SSH and omits Platformer Demo. Its
+  UF2 is `build/apps-picow-spotpear-ssh/firmware/apps/pico-apps.uf2`.
+
+The underlying `APP_ENABLE_PLATFORMER` and `APP_ENABLE_SSH` CMake options can
+also be set independently for custom builds. The normal Pico and Pico W
+presets keep both enabled.
 
 After the first flash, VS Code's Run and Debug panel provides two workflows:
 
@@ -56,6 +63,13 @@ Weather, Temperature, and Settings also use B as contextual Back: it returns
 home from their top-level screen and goes back one level in nested screens.
 Controls that need B, such as Snake speed adjustment and password deletion,
 keep their app-specific behavior.
+
+Platformer Demo exercises the game rendering path with a scrolling tile world,
+parallax scenery, and animated indexed-color sprites. Left/right chooses the
+scroll direction, up/down changes speed, click pauses, A switches between four
+and eight sprites, and B resets the camera. The HUD reports CPU render time;
+the LCD transfer continues asynchronously through DMA. The 240 x 240 SpotPear
+variant exposes more vertical scenery while preserving the same world layout.
 
 The Temperature app samples the RP2040 internal sensor twice per second. Its
 large reading moves through a violet, blue, cyan, green, yellow, orange, and red

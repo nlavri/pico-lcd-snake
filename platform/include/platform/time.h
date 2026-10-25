@@ -5,6 +5,7 @@
 
 void platform_sleep_ms(uint32_t milliseconds);
 uint32_t platform_time_ms(void);
+uint32_t platform_time_us(void);
 uint32_t platform_random_u32(void);
 
 #endif

@@ -13,6 +13,7 @@ else()
 endif()
 
 add_library(app_platform STATIC
+    display_primitives.c
     network.c
     ssh.c
     weather.c

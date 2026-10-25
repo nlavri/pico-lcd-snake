@@ -18,7 +18,8 @@
       "inherits": "apps-common",
       "binaryDir": "${sourceDir}/build/apps-pico",
       "cacheVariables": {
-        "PICO_BOARD": "pico"
+        "PICO_BOARD": "pico",
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000"
       }
     },
     {
@@ -32,13 +33,28 @@
     },
     {
       "name": "apps-picow-spotpear-debug",
-      "displayName": "Applications - Pico W + SpotPear 1.54 (Debug)",
+      "displayName": "Applications - Pico W + SpotPear 1.54 + Platformer (Debug)",
       "inherits": "apps-common",
       "binaryDir": "${sourceDir}/build/apps-picow-spotpear",
       "cacheVariables": {
         "PICO_BOARD": "pico_w",
         "APP_HARDWARE": "spotpear_rpi_lcd_1_54",
-        "APP_DISPLAY_SPI_BAUDRATE": "62500000"
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000",
+        "APP_ENABLE_PLATFORMER": "ON",
+        "APP_ENABLE_SSH": "OFF"
+      }
+    },
+    {
+      "name": "apps-picow-spotpear-ssh-debug",
+      "displayName": "Applications - Pico W + SpotPear 1.54 + SSH (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-picow-spotpear-ssh",
+      "cacheVariables": {
+        "PICO_BOARD": "pico_w",
+        "APP_HARDWARE": "spotpear_rpi_lcd_1_54",
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000",
+        "APP_ENABLE_PLATFORMER": "OFF",
+        "APP_ENABLE_SSH": "ON"
       }
     }
   ],
@@ -54,6 +70,10 @@
     {
       "name": "apps-picow-spotpear-debug",
       "configurePreset": "apps-picow-spotpear-debug"
+    },
+    {
+      "name": "apps-picow-spotpear-ssh-debug",
+      "configurePreset": "apps-picow-spotpear-ssh-debug"
     }
   ]
 }

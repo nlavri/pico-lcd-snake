@@ -10,7 +10,9 @@
 #include "input_events.h"
 #include "launcher_app.h"
 #include "network_service.h"
+#if APP_ENABLE_SSH
 #include "ssh_service.h"
+#endif
 #include "platform/display.h"
 #include "platform/input.h"
 #include "platform/log.h"
@@ -123,8 +125,12 @@ int main(void)
     surface = display_acquire_surface();
     uint32_t capabilities =
         APP_CAP_DISPLAY | APP_CAP_INPUT | APP_CAP_TEMPERATURE;
+    const SshServiceApi *ssh_api = NULL;
 #if defined(CYW43_WL_GPIO_LED_PIN)
     capabilities |= APP_CAP_WIFI;
+#endif
+#if APP_ENABLE_SSH
+    ssh_api = ssh_service_api();
 #endif
 
     if (!app_manager_init(
@@ -136,7 +142,7 @@ int main(void)
             capabilities,
             platform_temperature_read_c,
             network_service_api(),
-            ssh_service_api(),
+            ssh_api,
             weather_service_api()))
     {
         LOG_ERROR("main", "application manager initialization failed");
@@ -149,11 +155,13 @@ int main(void)
         return enter_usb_bootloader();
     }
 
+#if APP_ENABLE_SSH
     if (!ssh_service_start())
     {
         LOG_ERROR("main", "SSH service task creation failed");
         return enter_usb_bootloader();
     }
+#endif
 
     if (xTaskCreateStatic(
             ui_task,
