@@ -20,7 +20,7 @@ enum
     WORLD_WIDTH = WORLD_TILE_COLUMNS * TILE_SIZE,
     FRAME_INTERVAL_MS = 16,
     ANIMATION_INTERVAL_MS = 120,
-    MAX_SPRITES = 8,
+    MAX_SPRITES = 12,
 };
 
 enum TileKind
@@ -40,6 +40,7 @@ typedef struct PlatformerDemoState
     uint8_t speed;
     uint8_t animation_frame;
     uint8_t sprite_count;
+    bool large_display;
     bool paused;
     uint32_t render_count;
     uint32_t last_render_us;
@@ -95,13 +96,19 @@ static const DisplayColor enemy_palettes[3][4] = {
 };
 
 static const uint16_t sprite_world_x[MAX_SPRITES] = {
-    128, 236, 344, 472, 596, 708, 844, 956,
+    96, 176, 260, 344, 428, 512,
+    596, 680, 764, 848, 932, 1008,
 };
 
 static int positive_mod(int value, int divisor)
 {
     const int remainder = value % divisor;
     return remainder < 0 ? remainder + divisor : remainder;
+}
+
+static int scale_world(int value, int numerator, int denominator)
+{
+    return value * numerator / denominator;
 }
 
 static int ground_row(int world_column)
@@ -139,35 +146,73 @@ static void draw_tile(
     DisplaySurface *surface,
     int x,
     int y,
+    int tile_size,
     enum TileKind tile)
 {
+    const int grass_depth = tile_size * 3 / TILE_SIZE;
+    const int accent = tile_size >= 12 ? 3 : 2;
     switch (tile)
     {
         case TILE_GRASS:
             display_fill_rectangle(
-                surface, x, y, TILE_SIZE, TILE_SIZE, RGB565(88, 157, 76));
+                surface, x, y, tile_size, tile_size, RGB565(88, 157, 76));
             display_fill_rectangle(
-                surface, x, y + 3, TILE_SIZE, 5, RGB565(112, 76, 48));
+                surface,
+                x,
+                y + grass_depth,
+                tile_size,
+                tile_size - grass_depth,
+                RGB565(112, 76, 48));
             display_fill_rectangle(
-                surface, x + 2, y + 4, 2, 2, RGB565(151, 103, 61));
+                surface,
+                x + tile_size / 4,
+                y + tile_size / 2,
+                accent,
+                accent,
+                RGB565(151, 103, 61));
             break;
         case TILE_DIRT:
             display_fill_rectangle(
-                surface, x, y, TILE_SIZE, TILE_SIZE, RGB565(112, 76, 48));
+                surface, x, y, tile_size, tile_size, RGB565(112, 76, 48));
             display_fill_rectangle(
-                surface, x + 1, y + 2, 2, 2, RGB565(151, 103, 61));
+                surface,
+                x + tile_size / 8,
+                y + tile_size / 4,
+                accent,
+                accent,
+                RGB565(151, 103, 61));
             display_fill_rectangle(
-                surface, x + 5, y + 6, 2, 1, RGB565(72, 50, 39));
+                surface,
+                x + tile_size * 5 / 8,
+                y + tile_size * 3 / 4,
+                accent,
+                tile_size >= 12 ? 2 : 1,
+                RGB565(72, 50, 39));
             break;
         case TILE_BRICK:
             display_fill_rectangle(
-                surface, x, y, TILE_SIZE, TILE_SIZE, RGB565(190, 96, 55));
+                surface, x, y, tile_size, tile_size, RGB565(190, 96, 55));
             display_fill_rectangle(
-                surface, x, y + 3, TILE_SIZE, 1, RGB565(83, 53, 48));
+                surface,
+                x,
+                y + tile_size * 3 / 8,
+                tile_size,
+                tile_size >= 12 ? 2 : 1,
+                RGB565(83, 53, 48));
             display_fill_rectangle(
-                surface, x + 3, y, 1, 3, RGB565(83, 53, 48));
+                surface,
+                x + tile_size * 3 / 8,
+                y,
+                tile_size >= 12 ? 2 : 1,
+                tile_size * 3 / 8,
+                RGB565(83, 53, 48));
             display_fill_rectangle(
-                surface, x + 5, y + 4, 1, 4, RGB565(83, 53, 48));
+                surface,
+                x + tile_size * 5 / 8,
+                y + tile_size / 2,
+                tile_size >= 12 ? 2 : 1,
+                tile_size / 2,
+                RGB565(83, 53, 48));
             break;
         case TILE_SKY:
         default:
@@ -175,47 +220,72 @@ static void draw_tile(
     }
 }
 
-static int ground_pixel_y(int world_x, int vertical_offset)
+static int ground_pixel_y(int world_x, int world_origin_y, int tile_size)
 {
-    return HUD_HEIGHT + vertical_offset +
-        ground_row(world_x / TILE_SIZE) * TILE_SIZE;
+    return world_origin_y + ground_row(world_x / TILE_SIZE) * tile_size;
 }
 
 static void draw_background(
     DisplaySurface *surface,
     int viewport_width,
     int viewport_height,
-    int camera_x)
+    int camera_x,
+    int hud_height,
+    int scale_numerator,
+    int scale_denominator)
 {
     display_fill_rectangle(
         surface,
         0,
-        HUD_HEIGHT,
+        hud_height,
         viewport_width,
-        viewport_height - HUD_HEIGHT,
+        viewport_height - hud_height,
         RGB565(105, 191, 224));
 
-    const int parallax_offset = (camera_x / 4) % 32;
-    for (int x = -parallax_offset - 32; x < viewport_width + 32; x += 32)
+    const int hill_step = scale_world(
+        32, scale_numerator, scale_denominator);
+    const int parallax_offset = scale_world(
+        camera_x / 4, scale_numerator, scale_denominator) % hill_step;
+    for (int x = -parallax_offset - hill_step;
+         x < viewport_width + hill_step;
+         x += hill_step)
     {
-        const int variation = positive_mod((x + camera_x / 4) / 32, 3);
-        const int hill_height = 18 + variation * 7;
+        const int variation = positive_mod(
+            (x + parallax_offset) / hill_step, 3);
+        const int hill_height = scale_world(
+            18 + variation * 7, scale_numerator, scale_denominator);
         display_fill_rectangle(
             surface,
             x,
             viewport_height - hill_height,
-            33,
+            hill_step + 1,
             hill_height,
             RGB565(73, 139, 112));
     }
 
-    const int cloud_offset = (camera_x / 8) % 80;
-    for (int x = 20 - cloud_offset; x < viewport_width; x += 80)
+    const int cloud_step = scale_world(
+        80, scale_numerator, scale_denominator);
+    const int cloud_offset = scale_world(
+        camera_x / 8, scale_numerator, scale_denominator) % cloud_step;
+    for (int x = scale_world(20, scale_numerator, scale_denominator) -
+             cloud_offset;
+         x < viewport_width;
+         x += cloud_step)
     {
         display_fill_rectangle(
-            surface, x, HUD_HEIGHT + 17, 22, 5, RGB565(220, 244, 245));
+            surface,
+            x,
+            hud_height + scale_world(17, scale_numerator, scale_denominator),
+            scale_world(22, scale_numerator, scale_denominator),
+            scale_world(5, scale_numerator, scale_denominator),
+            RGB565(220, 244, 245));
         display_fill_rectangle(
-            surface, x + 5, HUD_HEIGHT + 13, 11, 4, RGB565(220, 244, 245));
+            surface,
+            x + scale_world(5, scale_numerator, scale_denominator),
+            hud_height + scale_world(13, scale_numerator, scale_denominator),
+            scale_world(11, scale_numerator, scale_denominator),
+            scale_world(4, scale_numerator, scale_denominator),
+            RGB565(220, 244, 245));
     }
 }
 
@@ -223,24 +293,29 @@ static void draw_tiles(
     DisplaySurface *surface,
     int viewport_width,
     int camera_x,
-    int vertical_offset)
+    int world_origin_y,
+    int tile_size,
+    int scale_numerator,
+    int scale_denominator)
 {
     const int first_column = camera_x / TILE_SIZE;
-    const int first_x = -(camera_x % TILE_SIZE);
+    const int first_x = -scale_world(
+        camera_x % TILE_SIZE, scale_numerator, scale_denominator);
     const int rows =
         (VIEWPORT_HEIGHT - HUD_HEIGHT + TILE_SIZE - 1) / TILE_SIZE;
-    const int columns = (viewport_width + TILE_SIZE * 2 - 1) / TILE_SIZE;
+    const int columns = (viewport_width + tile_size * 2 - 1) / tile_size;
 
     for (int column = 0; column < columns; column++)
     {
         const int world_column = first_column + column;
-        const int x = first_x + column * TILE_SIZE;
+        const int x = first_x + column * tile_size;
         for (int row = 0; row < rows; row++)
         {
             draw_tile(
                 surface,
                 x,
-                HUD_HEIGHT + vertical_offset + row * TILE_SIZE,
+                world_origin_y + row * tile_size,
+                tile_size,
                 tile_at(world_column, row));
         }
     }
@@ -273,14 +348,22 @@ static void draw_sprites(
     const PlatformerDemoState *state,
     DisplaySurface *surface,
     int viewport_width,
-    int vertical_offset)
+    int world_origin_y,
+    int tile_size,
+    int scale_numerator,
+    int scale_denominator,
+    uint8_t sprite_scale)
 {
-    const uint8_t sprite_scale = vertical_offset > 0 ? 2 : 1;
-    const int player_world_x = positive_mod(state->camera_x + 56, WORLD_WIDTH);
+    const int player_world_offset = state->large_display ? 80 : 56;
+    const int player_x = scale_world(
+        player_world_offset, scale_numerator, scale_denominator);
+    const int player_world_x = positive_mod(
+        state->camera_x + player_world_offset, WORLD_WIDTH);
     draw_runner(
         surface,
-        56,
-        ground_pixel_y(player_world_x, vertical_offset) - 12 * sprite_scale,
+        player_x,
+        ground_pixel_y(player_world_x, world_origin_y, tile_size) -
+            12 * sprite_scale,
         state->animation_frame,
         player_palette,
         state->direction < 0,
@@ -288,8 +371,14 @@ static void draw_sprites(
 
     for (uint8_t i = 0; i < state->sprite_count; i++)
     {
-        int x = (int)sprite_world_x[i] - state->camera_x;
-        x = positive_mod(x + 16, WORLD_WIDTH) - 16;
+        int world_delta = positive_mod(
+            (int)sprite_world_x[i] - state->camera_x, WORLD_WIDTH);
+        if (world_delta > WORLD_WIDTH - 16)
+        {
+            world_delta -= WORLD_WIDTH;
+        }
+        const int x = scale_world(
+            world_delta, scale_numerator, scale_denominator);
         if (x < -8 * sprite_scale || x >= viewport_width)
         {
             continue;
@@ -297,7 +386,8 @@ static void draw_sprites(
         draw_runner(
             surface,
             x,
-            ground_pixel_y(sprite_world_x[i], vertical_offset) -
+            ground_pixel_y(
+                sprite_world_x[i], world_origin_y, tile_size) -
                 12 * sprite_scale,
             (uint8_t)(state->animation_frame + i),
             enemy_palettes[i % 3],
@@ -308,11 +398,12 @@ static void draw_sprites(
 
 static bool demo_start(void *state_memory, AppContext *context)
 {
-    (void)context;
     PlatformerDemoState *state = state_memory;
+    state->large_display =
+        context->display_width >= 400 && context->display_height >= 300;
     state->direction = 1;
     state->speed = 2;
-    state->sprite_count = MAX_SPRITES;
+    state->sprite_count = state->large_display ? MAX_SPRITES : 8;
     state->render_count = 0;
     state->last_render_us = 0;
     state->maximum_render_us = 0;
@@ -351,9 +442,10 @@ static AppResult demo_handle_event(
     }
     else if (event->button == INPUT_A)
     {
-        state->sprite_count = state->sprite_count == MAX_SPRITES
+        const uint8_t maximum = state->large_display ? MAX_SPRITES : 8;
+        state->sprite_count = state->sprite_count == maximum
             ? 4
-            : MAX_SPRITES;
+            : maximum;
     }
     else if (event->button == INPUT_B)
     {
@@ -394,21 +486,54 @@ static void demo_render(const void *state_memory, DisplaySurface *surface)
     /* Render timing is diagnostic state owned by this transient app instance. */
     PlatformerDemoState *state = (PlatformerDemoState *)state_memory;
     const uint32_t started_us = platform_time_us();
-    const int viewport_width = surface->width < VIEWPORT_WIDTH
+    const int scale_numerator = state->large_display ? 3 : 1;
+    const int scale_denominator = state->large_display ? 2 : 1;
+    const int tile_size = scale_world(
+        TILE_SIZE, scale_numerator, scale_denominator);
+    const uint8_t sprite_scale = state->large_display
+        ? 3
+        : surface->height > VIEWPORT_HEIGHT ? 2 : 1;
+    const int hud_height = state->large_display ? 20 : HUD_HEIGHT;
+    const int viewport_width = state->large_display
         ? surface->width
-        : VIEWPORT_WIDTH;
+        : surface->width < VIEWPORT_WIDTH ? surface->width : VIEWPORT_WIDTH;
     const int viewport_height = surface->height;
-    const int vertical_offset = viewport_height > VIEWPORT_HEIGHT
-        ? viewport_height - VIEWPORT_HEIGHT
-        : 0;
+    const int world_height = scale_world(
+        VIEWPORT_HEIGHT - HUD_HEIGHT,
+        scale_numerator,
+        scale_denominator);
+    const int world_origin_y = viewport_height > world_height
+        ? viewport_height - world_height
+        : hud_height;
 
     draw_background(
-        surface, viewport_width, viewport_height, state->camera_x);
-    draw_tiles(surface, viewport_width, state->camera_x, vertical_offset);
-    draw_sprites(state, surface, viewport_width, vertical_offset);
+        surface,
+        viewport_width,
+        viewport_height,
+        state->camera_x,
+        hud_height,
+        scale_numerator,
+        scale_denominator);
+    draw_tiles(
+        surface,
+        viewport_width,
+        state->camera_x,
+        world_origin_y,
+        tile_size,
+        scale_numerator,
+        scale_denominator);
+    draw_sprites(
+        state,
+        surface,
+        viewport_width,
+        world_origin_y,
+        tile_size,
+        scale_numerator,
+        scale_denominator,
+        sprite_scale);
 
     display_fill_rectangle(
-        surface, 0, 0, viewport_width, HUD_HEIGHT, RGB565(20, 25, 35));
+        surface, 0, 0, viewport_width, hud_height, RGB565(20, 25, 35));
     char status[48];
     snprintf(
         status,
@@ -420,10 +545,10 @@ static void demo_render(const void *state_memory, DisplaySurface *surface)
         (unsigned long)state->last_render_us);
     display_draw_text_with_font(
         surface,
-        2,
-        2,
+        state->large_display ? 5 : 2,
+        state->large_display ? 4 : 2,
         status,
-        DISPLAY_FONT_TINY,
+        state->large_display ? DISPLAY_FONT_SMALL : DISPLAY_FONT_TINY,
         DISPLAY_COLOR_WHITE,
         RGB565(20, 25, 35));
 

@@ -56,6 +56,45 @@
         "APP_ENABLE_PLATFORMER": "OFF",
         "APP_ENABLE_SSH": "ON"
       }
+    },
+    {
+      "name": "apps-pico-ep0172-debug",
+      "displayName": "Applications - Pico + GeeekPi EP-0172 (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-pico-ep0172",
+      "cacheVariables": {
+        "PICO_BOARD": "pico",
+        "APP_HARDWARE": "geeekpi_ep0172",
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000",
+        "APP_ENABLE_PLATFORMER": "ON",
+        "APP_ENABLE_SSH": "OFF"
+      }
+    },
+    {
+      "name": "apps-picow-ep0172-debug",
+      "displayName": "Applications - Pico W + GeeekPi EP-0172 (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-picow-ep0172",
+      "cacheVariables": {
+        "PICO_BOARD": "pico_w",
+        "APP_HARDWARE": "geeekpi_ep0172",
+        "APP_DISPLAY_SPI_BAUDRATE": "62500000",
+        "APP_ENABLE_PLATFORMER": "ON",
+        "APP_ENABLE_SSH": "OFF"
+      }
+    },
+    {
+      "name": "apps-pico2w-ep0172-debug",
+      "displayName": "Applications - Pico 2 W + GeeekPi EP-0172 (Debug)",
+      "inherits": "apps-common",
+      "binaryDir": "${sourceDir}/build/apps-pico2w-ep0172",
+      "cacheVariables": {
+        "PICO_BOARD": "pico2_w",
+        "APP_HARDWARE": "geeekpi_ep0172",
+        "APP_DISPLAY_SPI_BAUDRATE": "75000000",
+        "APP_ENABLE_PLATFORMER": "ON",
+        "APP_ENABLE_SSH": "ON"
+      }
     }
   ],
   "buildPresets": [
@@ -74,6 +113,18 @@
     {
       "name": "apps-picow-spotpear-ssh-debug",
       "configurePreset": "apps-picow-spotpear-ssh-debug"
+    },
+    {
+      "name": "apps-pico-ep0172-debug",
+      "configurePreset": "apps-pico-ep0172-debug"
+    },
+    {
+      "name": "apps-picow-ep0172-debug",
+      "configurePreset": "apps-picow-ep0172-debug"
+    },
+    {
+      "name": "apps-pico2w-ep0172-debug",
+      "configurePreset": "apps-pico2w-ep0172-debug"
     }
   ]
 }

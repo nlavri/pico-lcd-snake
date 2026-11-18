@@ -28,6 +28,7 @@ typedef enum InputButton
     INPUT_A,
     INPUT_B,
     INPUT_HOME,
+    INPUT_TOUCH,
 } InputButton;
 
 typedef enum InputAction
@@ -35,6 +36,7 @@ typedef enum InputAction
     INPUT_PRESSED,
     INPUT_RELEASED,
     INPUT_REPEAT,
+    INPUT_MOVED,
 } InputAction;
 
 typedef struct InputEvent
@@ -42,6 +44,8 @@ typedef struct InputEvent
     InputButton button;
     InputAction action;
     uint32_t timestamp_ms;
+    uint16_t x;
+    uint16_t y;
 } InputEvent;
 
 typedef enum AppResult

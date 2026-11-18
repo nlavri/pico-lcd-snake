@@ -8,6 +8,18 @@
 // chicanery we'll need from the final version
 
 #include "picodoom.h"
+#if DOOM_EP0172_DIAGNOSTICS
+#include "hardware/structs/watchdog.h"
+#define EP0172_SYNC_STAGE(stage) (watchdog_hw->scratch[0] = (stage))
+#else
+#define EP0172_SYNC_STAGE(stage) ((void)0)
+#endif
+// Never draw progress markers during live rendering.  The EP0172 backend has
+// a continuous ST7796 RAM-write transaction open on core 1; window commands
+// sent from core 0 here corrupt that transaction and the shared line buffers.
+// Runtime synchronization stages are kept in watchdog scratch registers and
+// are rendered only after a watchdog reboot.
+#define EP0172_RENDER_STAGE(stage) ((void)0)
 #include "pico/sem.h"
 #include "hardware/gpio.h"
 // #include "hardware/spi.h"
@@ -33,9 +45,6 @@ extern "C" {
 #include "v_video.h"
 #include "i_video.h"
 // #include "pico/stdlib.h"
-#if PICO_ON_DEVICE
-#include "pico/st7789.h"
-#endif
 }
 
 // todo compare with and without
@@ -2596,6 +2605,7 @@ static void uh_oh_discard_columns(int render_col_limit) {
     }
 }
 void pd_end_frame(int wipe_start) {
+    EP0172_RENDER_STAGE(29);
     DEBUG_PINS_SET(start_end, 2);
 #if !PICO_ON_DEVICE
 //    tex_count.record_print(textures.size());
@@ -2607,12 +2617,15 @@ void pd_end_frame(int wipe_start) {
     reclip_fuzz_columns();
 #if PICO_ON_DEVICE
 //    gpio_put(22, 1);
+    EP0172_SYNC_STAGE(1);
     while (!sem_available(&display_frame_freed)) {
         I_UpdateSound();
     }
 //    gpio_put(22, 0);
 #endif
     sem_acquire_blocking(&display_frame_freed);
+    EP0172_SYNC_STAGE(2);
+    EP0172_RENDER_STAGE(30);
     bool showing_help = inhelpscreens;
     static boolean was_in_help;
     if (gamestate == GS_LEVEL) {
@@ -2794,8 +2807,11 @@ void pd_end_frame(int wipe_start) {
         draw_cast_sprite(sprite_lump);
     }
 #endif
+    EP0172_RENDER_STAGE(31);
     sem_release(&core0_done);
+    EP0172_SYNC_STAGE(3);
     sem_acquire_blocking(&core1_done);
+    EP0172_SYNC_STAGE(4);
     draw_fuzz_columns();
     DEBUG_PINS_CLR(full_render, 1);
     NetUpdate();
@@ -2961,12 +2977,15 @@ void pd_end_frame(int wipe_start) {
     printf("GS %d vt %d fi %d\n", gamestate, next_video_type, next_frame_index);
 #endif
     sem_release(&render_frame_ready);
+    EP0172_SYNC_STAGE(5);
     DEBUG_PINS_CLR(start_end, 2);
 }
 
 void pd_core1_loop() {
 #if PICO_ON_DEVICE
+    EP0172_SYNC_STAGE(6);
     sem_acquire_blocking(&core1_wake);
+    EP0172_SYNC_STAGE(7);
 #if USE_CORE1_FOR_FLATS
     while (!sem_acquire_timeout_ms(&core1_do_flats, 1)) {
         SafeUpdateSound();
@@ -2981,10 +3000,12 @@ void pd_core1_loop() {
     draw_regular_columns(1);
 #endif
 #endif
+    EP0172_SYNC_STAGE(8);
     while (!sem_acquire_timeout_ms(&core0_done, 1)) {
         SafeUpdateSound();
     }
 #endif
+    EP0172_SYNC_STAGE(9);
     sem_release(&core1_done);
 }
 

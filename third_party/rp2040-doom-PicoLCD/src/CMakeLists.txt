@@ -488,10 +488,16 @@ function(add_doom_tiny SUFFIX SCREEN)
         target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7789_240_135.c)
     elseif (SCREEN STREQUAL "ST7789_240_240_SPOTPEAR")
         target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7789_240_240_spotpear.c)
+    elseif (SCREEN STREQUAL "ST7796_480_320_EP0172")
+        target_sources(doom_tiny${SUFFIX} PRIVATE pico/pico-screens/screens/st7796_480_320_ep0172.c)
     else()
-        message(FATAL_ERROR "Unsupported Pico ST7789 display: ${SCREEN}")
+        message(FATAL_ERROR "Unsupported Pico display: ${SCREEN}")
     endif()
-    target_link_libraries(doom_tiny${SUFFIX} PRIVATE pico_st7789 hardware_spi)
+    if (SCREEN STREQUAL "ST7796_480_320_EP0172")
+        target_link_libraries(doom_tiny${SUFFIX} PRIVATE hardware_spi pico_status_led)
+    else()
+        target_link_libraries(doom_tiny${SUFFIX} PRIVATE pico_st7789 hardware_spi)
+    endif()
     target_include_directories(doom_tiny${SUFFIX} PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/../")
     target_link_libraries(doom_tiny${SUFFIX} PRIVATE doom ${EXTRA_LIBS})
     target_link_libraries(doom_tiny${SUFFIX} PRIVATE small_doom_common)
@@ -589,11 +595,20 @@ function(add_doom_tiny SUFFIX SCREEN)
         PICO_DEBUG_MALLOC=1
         EMU8950_NO_RATECONV=1
 
-        PICO_CORE1_STACK_SIZE=0x0e00
         PICO_STACK_SIZE=0x1000
 
         NO_IERROR=1
     )
+    if (SCREEN STREQUAL "ST7796_480_320_EP0172")
+        # The EP-0172 scanline path adds scaling and SPI conversion calls on
+        # core 1.  Its scratch-X data is moved to main SRAM below, allowing
+        # the renderer to use the complete 4 KiB bank as its stack.
+        target_compile_definitions(doom_tiny${SUFFIX} PRIVATE
+            PICO_CORE1_STACK_SIZE=0x1000)
+    else()
+        target_compile_definitions(doom_tiny${SUFFIX} PRIVATE
+            PICO_CORE1_STACK_SIZE=0x0e00)
+    endif()
     if (PICO_ON_DEVICE)
         # target_link_libraries(doom_tiny${SUFFIX} PRIVATE hardware_spi)
         # TODO use defs or targets for these?
@@ -688,4 +703,44 @@ target_compile_definitions(doom_tiny_ST7789_240_240_SPOTPEAR PRIVATE
 )
 pico_enable_stdio_usb(doom_tiny_ST7789_240_240_SPOTPEAR 1)
 pico_enable_stdio_uart(doom_tiny_ST7789_240_240_SPOTPEAR 0)
+
+add_doom_tiny(_ST7796_480_320_EP0172 ST7796_480_320_EP0172)
+target_link_libraries(doom_tiny_ST7796_480_320_EP0172 PRIVATE
+    tiny_settings
+    hardware_adc)
+target_compile_definitions(doom_tiny_ST7796_480_320_EP0172 PRIVATE
+    TINY_WAD_ADDR=0x10041000
+    DOWNSAMPLING_FACTOR_OUT_OF_100=100
+    DOOM_BOARD_ANALOG_JOYSTICK=1
+    DOOM_EP0172_EARLY_SCREEN=0
+    DOOM_EP0172_DIAGNOSTICS=0
+    DOOM_EP0172_SAFE_CLOCK=0
+    DOOM_EP0172_SAFE_SPI=0
+    DOOM_EP0172_RGB_STATUS=0
+    DOOM_EP0172_SCANLINE_TEST=0
+    DOOM_EP0172_AUTOSTART=1
+    DOOM_BOARD_KEY_A_PIN=15
+    DOOM_BOARD_KEY_B_PIN=14
+    DOOM_BOARD_KEY_DEBOUNCE_US=0
+    PICO_DEFAULT_WS2812_PIN=12
+    PICO_STATUS_LED_AVAILABLE=0
+    PICO_COLORED_STATUS_LED_AVAILABLE=1
+)
+if(PICO_PLATFORM MATCHES "^rp2350")
+    target_compile_definitions(doom_tiny_ST7796_480_320_EP0172 PRIVATE
+        DOOM_EP0172_NATIVE_VIEW=0
+        DOOM_EP0172_BALANCED_VIEW=1
+        DOOM_EP0172_LOW_TEAR_VIEW=0
+        DOOM_EP0172_INTERLACED=0
+        DOOM_EP0172_PICO2=1)
+else()
+    target_compile_definitions(doom_tiny_ST7796_480_320_EP0172 PRIVATE
+        DOOM_EP0172_NATIVE_VIEW=0
+        DOOM_EP0172_BALANCED_VIEW=1
+        DOOM_EP0172_LOW_TEAR_VIEW=0
+        DOOM_EP0172_INTERLACED=0
+        DOOM_EP0172_PICO2=0)
+endif()
+pico_enable_stdio_usb(doom_tiny_ST7796_480_320_EP0172 0)
+pico_enable_stdio_uart(doom_tiny_ST7796_480_320_EP0172 0)
 

@@ -4,8 +4,9 @@ Small FreeRTOS application firmware for Raspberry Pi Pico and Pico W with a
 launcher, Calculator, Snake game, a scrolling Platformer Demo,
 onboard-temperature display, Weather, SSH, and Settings apps.
 
-The application firmware supports the Waveshare Pico LCD 1.14 and the
-SpotPear 1.54-inch Game LCD HAT used through the project's Pico wiring adapter.
+The application firmware supports the Waveshare Pico LCD 1.14, the SpotPear
+1.54-inch Game LCD HAT used through the project's Pico wiring adapter, and the
+GeeekPi/52Pi EP-0172 3.5-inch Pico breadboard kit.
 
 The planned multi-application FreeRTOS and standalone DOOM structure is
 documented in [docs/architecture/README.md](docs/architecture/README.md).
@@ -39,6 +40,15 @@ The underlying `APP_ENABLE_PLATFORMER` and `APP_ENABLE_SSH` CMake options can
 also be set independently for custom builds. The normal Pico and Pico W
 presets keep both enabled.
 
+For the EP-0172 kit, use `apps-pico-ep0172-debug`,
+`apps-picow-ep0172-debug`, or `apps-pico2w-ep0172-debug`. Their UF2 files are
+under the matching `build/apps-*-ep0172/firmware/apps/` directory. The RP2040
+presets use a 240 x 160 logical framebuffer scaled to 480 x 320 and omit SSH;
+the Pico 2 W preset uses a native 480 x 320 framebuffer and includes both SSH
+and Platformer Demo. See
+[docs/hardware/geeekpi-ep0172.md](docs/hardware/geeekpi-ep0172.md) for the pin
+map and implementation notes.
+
 After the first flash, VS Code's Run and Debug panel provides two workflows:
 
 - `Pico: Upload via USB (no debug)` builds, uploads with `picotool`, and runs.
@@ -63,6 +73,13 @@ Weather, Temperature, and Settings also use B as contextual Back: it returns
 home from their top-level screen and goes back one level in nested screens.
 Controls that need B, such as Snake speed adjustment and password deletion,
 keep their app-specific behavior.
+
+On EP-0172, the analog joystick provides directions, BTN1 is Select/Click, and
+BTN2 is B/Back. Hold BTN1+BTN2 for 750 ms to return to the launcher; this
+replaces the A+B gesture because the kit has no separate A button or joystick
+switch. The onboard RGB LED is dim blue during boot, green when the scheduler
+is ready, and red if startup fails. The touch panel can select launcher
+entries, menu controls, calculator keys, and virtual-keyboard keys.
 
 Platformer Demo exercises the game rendering path with a scrolling tile world,
 parallax scenery, and animated indexed-color sprites. Left/right chooses the
@@ -138,8 +155,8 @@ and weather-condition colors, remain independent.
 Settings -> Brightness controls the display backlight from 10% to 100% in 10%
 steps. Up/down previews the level, click saves it, and left restores the
 previous value. Brightness is stored with the accent preference. The directly
-wired SpotPear HAT does not expose a backlight-control pin, so this setting is
-retained but cannot change that display's brightness.
+wired SpotPear HAT and EP-0172 kit do not expose backlight control to a Pico
+GPIO, so this setting is retained but cannot change those displays' brightness.
 
 For a locally preconfigured network, copy
 `firmware/apps/network_defaults.local.example.h` to

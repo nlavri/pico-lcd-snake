@@ -26,7 +26,8 @@ option(APP_ENABLE_PLATFORMER "Include the platformer demo app" ON)
 option(APP_ENABLE_SSH "Include the SSH app and service" ON)
 set_property(CACHE APP_HARDWARE PROPERTY STRINGS
     waveshare_pico_lcd_1_14
-    spotpear_rpi_lcd_1_54)
+    spotpear_rpi_lcd_1_54
+    geeekpi_ep0172)
 
 include(cmake/pico_sdk_import.cmake)
 
@@ -46,6 +47,11 @@ if(APP_ENABLE_SSH)
 else()
     add_compile_definitions(APP_ENABLE_SSH=0)
 endif()
+if(APP_HARDWARE STREQUAL "geeekpi_ep0172")
+    add_compile_definitions(APP_INPUT_HOME_CLICK_B=1)
+else()
+    add_compile_definitions(APP_INPUT_HOME_CLICK_B=0)
+endif()
 
 # Application firmware runs FreeRTOS on core 0 only; core 1 never executes
 # from flash, so flash_safe_execute only needs to mask core-0 interrupts.
@@ -55,8 +61,13 @@ set(FREERTOS_KERNEL_PATH
     ${CMAKE_CURRENT_LIST_DIR}/third_party/FreeRTOS-Kernel)
 set(FREERTOS_CONFIG_FILE_DIRECTORY
     ${CMAKE_CURRENT_LIST_DIR}/firmware/apps)
+if(PICO_PLATFORM MATCHES "^rp2350")
+    set(APP_FREERTOS_PORT RP2350_ARM_NTZ)
+else()
+    set(APP_FREERTOS_PORT RP2040)
+endif()
 add_subdirectory(
-    third_party/FreeRTOS-Kernel/portable/ThirdParty/GCC/RP2040
+    third_party/FreeRTOS-Kernel/portable/ThirdParty/GCC/${APP_FREERTOS_PORT}
     FreeRTOS-Kernel)
 
 add_subdirectory(common)

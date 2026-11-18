@@ -72,6 +72,13 @@ void ui_text_input_clear(UiTextInput *input);
 UiTextInputResult ui_text_input_handle_event(
     UiTextInput *input,
     const InputEvent *event);
+UiTextInputResult ui_text_input_handle_touch(
+    UiTextInput *input,
+    uint16_t x,
+    uint16_t y,
+    uint16_t surface_width,
+    uint16_t surface_height,
+    uint16_t keyboard_y);
 char ui_text_input_selected_character(const UiTextInput *input);
 
 size_t ui_list_move(size_t selected, size_t item_count, int direction);

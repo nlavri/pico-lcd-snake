@@ -16,6 +16,7 @@
 #include "platform/display.h"
 #include "platform/input.h"
 #include "platform/log.h"
+#include "platform/rgb_led.h"
 #include "platform/temperature.h"
 #include "platform/time.h"
 #include "ui.h"
@@ -110,9 +111,12 @@ int main(void)
 {
     stdio_init_all();
     platform_log_init();
+    platform_rgb_led_init();
+    platform_rgb_led_set(0, 0, 24);
 
     if (!display_init())
     {
+        platform_rgb_led_set(32, 0, 0);
         LOG_ERROR("main", "display initialization failed");
         return enter_usb_bootloader();
     }
@@ -145,12 +149,14 @@ int main(void)
             ssh_api,
             weather_service_api()))
     {
+        platform_rgb_led_set(32, 0, 0);
         LOG_ERROR("main", "application manager initialization failed");
         return enter_usb_bootloader();
     }
 
     if (!network_service_start())
     {
+        platform_rgb_led_set(32, 0, 0);
         LOG_ERROR("main", "network service task creation failed");
         return enter_usb_bootloader();
     }
@@ -158,6 +164,7 @@ int main(void)
 #if APP_ENABLE_SSH
     if (!ssh_service_start())
     {
+        platform_rgb_led_set(32, 0, 0);
         LOG_ERROR("main", "SSH service task creation failed");
         return enter_usb_bootloader();
     }
@@ -172,10 +179,12 @@ int main(void)
             ui_task_stack,
             &ui_task_storage) == NULL)
     {
+        platform_rgb_led_set(32, 0, 0);
         LOG_ERROR("main", "UI task creation failed");
         return enter_usb_bootloader();
     }
 
+    platform_rgb_led_set(0, 24, 0);
     LOG_INFO("main", "application firmware initialized; starting FreeRTOS");
     vTaskStartScheduler();
     return enter_usb_bootloader();

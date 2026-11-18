@@ -16,6 +16,15 @@ enum
     INPUT_MASK_B = 1u << 6,
 };
 
+static uint8_t input_home_mask(void)
+{
+#if APP_INPUT_HOME_CLICK_B
+    return INPUT_MASK_CLICK | INPUT_MASK_B;
+#else
+    return INPUT_MASK_A | INPUT_MASK_B;
+#endif
+}
+
 static uint8_t input_mask(const PlatformInputState *input)
 {
     return
@@ -118,6 +127,9 @@ size_t input_events_update(
         source->repeat_mask = raw_mask & direction_mask;
         source->repeat_started_ms = now_ms;
         source->repeat_last_ms = now_ms;
+        source->touch_pressed = input->touch;
+        source->touch_x = input->touch_x;
+        source->touch_y = input->touch_y;
         source->initialized = true;
     }
 
@@ -134,7 +146,7 @@ size_t input_events_update(
         uint8_t changed = source->candidate_mask ^ source->stable_mask;
         source->stable_mask = source->candidate_mask;
 
-        const uint8_t home_mask = INPUT_MASK_A | INPUT_MASK_B;
+        const uint8_t home_mask = input_home_mask();
         if ((source->stable_mask & home_mask) == home_mask)
         {
             source->home_chord_active = true;
@@ -166,7 +178,7 @@ size_t input_events_update(
         }
     }
 
-    const uint8_t home_mask = INPUT_MASK_A | INPUT_MASK_B;
+    const uint8_t home_mask = input_home_mask();
     if ((source->stable_mask & home_mask) == home_mask)
     {
         if (source->home_since_ms == 0)
@@ -203,6 +215,39 @@ size_t input_events_update(
             events + count,
             INPUT_EVENT_BATCH_CAPACITY - count);
         source->repeat_last_ms = now_ms;
+    }
+
+    if (count < INPUT_EVENT_BATCH_CAPACITY &&
+        input->touch != source->touch_pressed)
+    {
+        if (input->touch)
+        {
+            source->touch_x = input->touch_x;
+            source->touch_y = input->touch_y;
+        }
+        events[count++] = (InputEvent){
+            .button = INPUT_TOUCH,
+            .action = input->touch ? INPUT_PRESSED : INPUT_RELEASED,
+            .timestamp_ms = now_ms,
+            .x = source->touch_x,
+            .y = source->touch_y,
+        };
+        source->touch_pressed = input->touch;
+    }
+    else if (count < INPUT_EVENT_BATCH_CAPACITY &&
+             input->touch &&
+             (input->touch_x != source->touch_x ||
+              input->touch_y != source->touch_y))
+    {
+        source->touch_x = input->touch_x;
+        source->touch_y = input->touch_y;
+        events[count++] = (InputEvent){
+            .button = INPUT_TOUCH,
+            .action = INPUT_MOVED,
+            .timestamp_ms = now_ms,
+            .x = source->touch_x,
+            .y = source->touch_y,
+        };
     }
 
     return count;

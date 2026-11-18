@@ -116,6 +116,14 @@
       "command": "/opt/homebrew/bin/picotool load -f -v -x \"${workspaceFolder}/build/doom-pico/src/doom_tiny_ST7789_240_240_SPOTPEAR.uf2\""
     },
     {
+      "name": "Doom EP-0172: Release via USB (keep game data)",
+      "type": "node-terminal",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "preLaunchTask": "Doom EP-0172: Build",
+      "command": "/opt/homebrew/bin/picotool load -f -v -x \"${workspaceFolder}/build/doom-pico2w-ep0172/src/doom_tiny_ST7796_480_320_EP0172.uf2\""
+    },
+    {
       "name": "Doom: Capture USB logs",
       "type": "node-terminal",
       "request": "launch",

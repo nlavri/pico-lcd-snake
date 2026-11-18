@@ -277,6 +277,54 @@ static AppResult ssh_app_handle_event(
     const InputEvent *event)
 {
     SshAppState *state = state_memory;
+    if (event->button == INPUT_TOUCH && event->action == INPUT_PRESSED)
+    {
+        UiTextInput *editor = active_editor(state);
+        if (editor != NULL)
+        {
+            const uint16_t keyboard_y =
+                state->context->display_height >= 200 ? 49 : 38;
+            const UiTextInputResult result = ui_text_input_handle_touch(
+                editor,
+                event->x,
+                event->y,
+                state->context->display_width,
+                state->context->display_height,
+                keyboard_y);
+            if (result == UI_TEXT_INPUT_SUBMIT)
+            {
+                return handle_editor(state, &(InputEvent){
+                    .button = INPUT_A,
+                    .action = INPUT_PRESSED,
+                    .timestamp_ms = event->timestamp_ms,
+                });
+            }
+            return result == UI_TEXT_INPUT_CHANGED
+                ? APP_RESULT_REDRAW
+                : APP_RESULT_CONTINUE;
+        }
+        if (state->screen == SSH_APP_SETUP && event->y >= 22)
+        {
+            const uint16_t spacing =
+                state->context->display_height >= 200 ? 28 : 20;
+            const size_t row = (event->y - 22) / spacing;
+            if (row < SSH_SETUP_ITEM_COUNT)
+            {
+                state->selected_item = row;
+                return handle_setup(state, &(InputEvent){
+                    .button = INPUT_CLICK,
+                    .action = INPUT_PRESSED,
+                    .timestamp_ms = event->timestamp_ms,
+                });
+            }
+        }
+        if (state->screen == SSH_APP_TERMINAL)
+        {
+            state->screen = SSH_APP_COMMAND;
+            return APP_RESULT_REDRAW;
+        }
+        return APP_RESULT_CONTINUE;
+    }
     if (event->action != INPUT_PRESSED && event->action != INPUT_REPEAT)
     {
         return APP_RESULT_CONTINUE;

@@ -19,8 +19,11 @@ typedef struct InputEventSource
     uint32_t repeat_started_ms;
     uint32_t repeat_last_ms;
     uint8_t repeat_mask;
+    uint16_t touch_x;
+    uint16_t touch_y;
     bool home_chord_active;
     bool home_sent;
+    bool touch_pressed;
     bool initialized;
 } InputEventSource;
 

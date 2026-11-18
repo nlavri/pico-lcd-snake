@@ -82,6 +82,23 @@
 #if PICO_BUILD
 #include "i_picosound.h"
 #endif
+#if DOOM_EP0172_EARLY_SCREEN
+#include "pico-screens/screen.h"
+#if DOOM_EP0172_DIAGNOSTICS
+#include "hardware/structs/watchdog.h"
+#include "hardware/watchdog.h"
+#endif
+#define EP0172_BOOT_STAGE(stage) do { \
+    if ((stage) <= 16) I_showBootStage(stage); \
+} while (0)
+static boolean ep0172_trace_first_frame = true;
+// Once graphics has launched core 1, no core-0 diagnostic may touch the LCD.
+// Even a single window command interrupts the continuous RAM-write scanout.
+#define EP0172_FRAME_STAGE(stage) ((void)0)
+#else
+#define EP0172_BOOT_STAGE(stage) ((void)0)
+#define EP0172_FRAME_STAGE(stage) ((void)0)
+#endif
 
 #include "hardware/gpio.h"
 
@@ -182,8 +199,10 @@ void R_ExecuteSetViewSize (void);
 
 boolean D_Display (void)
 {
+    EP0172_FRAME_STAGE(26);
 #if PICO_DOOM
     pd_begin_frame();
+    EP0172_FRAME_STAGE(27);
 #endif
 
 #if !DOOM_TINY
@@ -345,6 +364,7 @@ boolean D_Display (void)
 #endif
 
 #if PICO_DOOM
+    EP0172_FRAME_STAGE(28);
     pd_end_frame(wipe);
 #else
 
@@ -489,10 +509,13 @@ void D_RunFrame()
 
     // frame syncronous IO operations
     I_StartFrame ();
+    EP0172_FRAME_STAGE(23);
 
     TryRunTics (); // will run at least one tic
+    EP0172_FRAME_STAGE(24);
 
     S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
+    EP0172_FRAME_STAGE(25);
 
     // Update display, next frame, with current state if no profiling is on
     if (screenvisible && !nodrawers)
@@ -521,6 +544,7 @@ void D_RunFrame()
 //
 void D_DoomLoop (void)
 {
+    EP0172_BOOT_STAGE(15);
     if (gamevariant == bfgedition &&
         (demorecording || (gameaction == ga_playdemo) || netgame))
     {
@@ -543,6 +567,12 @@ void D_DoomLoop (void)
     I_SetGrabMouseCallback(D_GrabMouseCallback);
 #endif
     I_InitGraphics();
+    EP0172_BOOT_STAGE(16);
+#if DOOM_EP0172_DIAGNOSTICS
+    watchdog_hw->scratch[0] = 13;
+    watchdog_hw->scratch[1] = 0x45503172u;
+    watchdog_enable(10000, true);
+#endif
 #if USB_SUPPORT
     printf("Sleeping 2s for USB devices\n"); // TinyUSB still grinds to a halt during connect/disconnect
     absolute_time_t end_time = make_timeout_time_ms(2000);
@@ -551,13 +581,18 @@ void D_DoomLoop (void)
     } while (!time_reached(end_time));
 #endif
     EnableLoadingDisk();
+    EP0172_BOOT_STAGE(17);
 
     TryRunTics();
+    EP0172_BOOT_STAGE(18);
 
     V_RestoreBuffer();
+    EP0172_BOOT_STAGE(19);
     R_ExecuteSetViewSize();
+    EP0172_BOOT_STAGE(20);
 
     D_StartGameLoop();
+    EP0172_BOOT_STAGE(21);
 
     if (testcontrols)
     {
@@ -566,7 +601,15 @@ void D_DoomLoop (void)
 
     while (1)
     {
+        EP0172_FRAME_STAGE(22);
         D_RunFrame();
+#if DOOM_EP0172_EARLY_SCREEN
+        ep0172_trace_first_frame = false;
+#endif
+#if DOOM_EP0172_DIAGNOSTICS
+        watchdog_hw->scratch[0] = 13;
+        watchdog_update();
+#endif
 #if PICO_DOOM_INFO
         static uint8_t x = 0;
         if (!++x) {
@@ -1343,12 +1386,15 @@ void D_DoomMain (void)
     I_AtExit(D_Endoom, false);
 #endif
 
+    EP0172_BOOT_STAGE(4);
+
     // print banner
 
     I_PrintBanner(PACKAGE_STRING);
 
     DEH_printf("Z_Init: Init zone memory allocation daemon. \n");
     Z_Init ();
+    EP0172_BOOT_STAGE(5);
 
 #if !NO_USE_NET
     //!
@@ -1572,9 +1618,11 @@ void D_DoomMain (void)
 
     DEH_printf("W_Init: Init WADfiles.\n");
     
+#ifdef PICO_DEFAULT_LED_PIN
     gpio_init(PICO_DEFAULT_LED_PIN);
     gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
     gpio_put(PICO_DEFAULT_LED_PIN, 1);
+#endif
 #if !NO_FILE_ACCESS && !DOOM_TINY
     D_AddFile(iwadfile);
 #else
@@ -1588,7 +1636,9 @@ void D_DoomMain (void)
     gamemission = IdentifyIWADByName(whdheader->name);
 #endif
 
+#ifdef PICO_DEFAULT_LED_PIN
     gpio_put(PICO_DEFAULT_LED_PIN, 0);
+#endif
 
     // Now that we've loaded the IWAD, we can figure out what gamemission
     // we're playing and which version of Vanilla Doom we need to emulate.
@@ -2044,28 +2094,36 @@ void D_DoomMain (void)
 
     DEH_printf("M_Init: Init miscellaneous info.\n");
     M_Init ();
+    EP0172_BOOT_STAGE(6);
 
     DEH_printf("R_Init: Init DOOM refresh daemon - ");
     R_Init ();
+    EP0172_BOOT_STAGE(7);
 
     DEH_printf("\nP_Init: Init Playloop state.\n");
     P_Init ();
+    EP0172_BOOT_STAGE(8);
 
     DEH_printf("S_Init: Setting up sound.\n");
     S_Init (sfxVolume * 8, musicVolume * 8);
+    EP0172_BOOT_STAGE(9);
 
 #if !USE_PICO_NET
     DEH_printf("D_CheckNetGame: Checking network game status.\n");
 #endif
     D_CheckNetGame ();
+    EP0172_BOOT_STAGE(10);
 
     PrintGameVersion();
+    EP0172_BOOT_STAGE(11);
 
     DEH_printf("HU_Init: Setting up heads up display.\n");
     HU_Init ();
+    EP0172_BOOT_STAGE(12);
 
     DEH_printf("ST_Init: Init status bar.\n");
     ST_Init ();
+    EP0172_BOOT_STAGE(13);
 
     // If Doom II without a MAP01 lump, this is a store demo.
     // Moved this here so that MAP01 isn't constantly looked up
@@ -2124,11 +2182,17 @@ void D_DoomMain (void)
 
     if (gameaction != ga_loadgame )
     {
+#if DOOM_EP0172_AUTOSTART
+        G_InitNew (sk_medium, 1, 1);
+#else
 	if (autostart || netgame)
 	    G_InitNew (startskill, startepisode, startmap);
 	else
 	    D_StartTitle ();                // start up intro loop
+#endif
     }
+
+    EP0172_BOOT_STAGE(14);
 
     D_DoomLoop ();  // never returns
 }

@@ -518,6 +518,14 @@ static void pico_key_up(int scancode, int keysym, int modifiers) {
 // DOOM uses separate keys for closing the menu and returning to its parent.
 extern boolean menuactive;
 
+#ifndef DOOM_BOARD_ANALOG_JOYSTICK
+#define DOOM_BOARD_ANALOG_JOYSTICK 0
+#endif
+
+#if DOOM_BOARD_ANALOG_JOYSTICK
+#include "hardware/adc.h"
+#endif
+
 #ifndef DOOM_BOARD_KEY_A_PIN
 #define DOOM_BOARD_KEY_A_PIN 15
 #endif
@@ -539,6 +547,9 @@ extern boolean menuactive;
 #ifndef DOOM_BOARD_KEY_CLICK_PIN
 #define DOOM_BOARD_KEY_CLICK_PIN 3
 #endif
+#ifndef DOOM_BOARD_KEY_DEBOUNCE_US
+#define DOOM_BOARD_KEY_DEBOUNCE_US 15000
+#endif
 
 enum {
     BOARD_KEY_A_PIN = DOOM_BOARD_KEY_A_PIN,
@@ -548,7 +559,7 @@ enum {
     BOARD_KEY_LEFT_PIN = DOOM_BOARD_KEY_LEFT_PIN,
     BOARD_KEY_RIGHT_PIN = DOOM_BOARD_KEY_RIGHT_PIN,
     BOARD_KEY_CLICK_PIN = DOOM_BOARD_KEY_CLICK_PIN,
-    BOARD_KEY_DEBOUNCE_US = 15000,
+    BOARD_KEY_DEBOUNCE_US = DOOM_BOARD_KEY_DEBOUNCE_US,
 };
 
 typedef struct {
@@ -602,11 +613,23 @@ static void board_input_update_key(board_key_t *key, bool observed, uint32_t now
 
 static void board_input_poll(void)
 {
+#if DOOM_BOARD_ANALOG_JOYSTICK
+    adc_select_input(0);
+    const uint16_t joystick_x = adc_read();
+    adc_select_input(1);
+    const uint16_t joystick_y = adc_read();
+    const bool up = joystick_y > 2900;
+    const bool down = joystick_y < 1200;
+    const bool left = joystick_x < 1200;
+    const bool right = joystick_x > 2900;
+    const bool click = false;
+#else
     const bool up = board_input_pressed(BOARD_KEY_UP_PIN);
     const bool down = board_input_pressed(BOARD_KEY_DOWN_PIN);
     const bool left = board_input_pressed(BOARD_KEY_LEFT_PIN);
     const bool right = board_input_pressed(BOARD_KEY_RIGHT_PIN);
     const bool click = board_input_pressed(BOARD_KEY_CLICK_PIN);
+#endif
     const bool a = board_input_pressed(BOARD_KEY_A_PIN);
     const bool b = board_input_pressed(BOARD_KEY_B_PIN);
     const bool menu = a && b;
@@ -615,8 +638,8 @@ static void board_input_poll(void)
         down,
         left,
         right,
-        click,
-        a && !menu,
+        click || (a && !menu && menuactive),
+        a && !menu && !menuactive,
         b && !menu && !menuactive,
         b && !menu && menuactive,
         menu,
@@ -647,11 +670,17 @@ void I_InputInit(void) {
 #if PICO_ON_DEVICE
     board_input_init_pin(BOARD_KEY_A_PIN);
     board_input_init_pin(BOARD_KEY_B_PIN);
+#if DOOM_BOARD_ANALOG_JOYSTICK
+    adc_init();
+    adc_gpio_init(26);
+    adc_gpio_init(27);
+#else
     board_input_init_pin(BOARD_KEY_UP_PIN);
     board_input_init_pin(BOARD_KEY_DOWN_PIN);
     board_input_init_pin(BOARD_KEY_LEFT_PIN);
     board_input_init_pin(BOARD_KEY_RIGHT_PIN);
     board_input_init_pin(BOARD_KEY_CLICK_PIN);
+#endif
 #endif
 }
 

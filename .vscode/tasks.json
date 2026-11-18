@@ -132,6 +132,50 @@
       "problemMatcher": "$gcc"
     },
     {
+      "label": "Doom EP-0172: Configure",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "-S",
+        "${workspaceFolder}/third_party/rp2040-doom-PicoLCD",
+        "-B",
+        "${workspaceFolder}/build/doom-pico2w-ep0172",
+        "-G",
+        "Ninja",
+        "-DCMAKE_BUILD_TYPE=MinSizeRel",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
+        "-DDOOM_ENABLE_AUDIO=OFF",
+        "-DPICO_BOARD=pico2_w",
+        "-DPICO_SDK_PATH=${env:HOME}/.pico-sdk/sdk/2.3.1",
+        "-DPICO_TOOLCHAIN_PATH=${env:HOME}/.pico-sdk/toolchain/15_2_Rel1",
+        "-DPICO_EXTRAS_PATH=${workspaceFolder}/third_party/pico-extras"
+      ],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "Doom EP-0172: Build",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "${workspaceFolder}/build/doom-pico2w-ep0172",
+        "--target",
+        "doom_tiny_ST7796_480_320_EP0172"
+      ],
+      "dependsOn": "Doom EP-0172: Configure",
+      "dependsOrder": "sequence",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
       "label": "Doom: Load game data with probe",
       "type": "process",
       "command": "/opt/homebrew/bin/openocd",

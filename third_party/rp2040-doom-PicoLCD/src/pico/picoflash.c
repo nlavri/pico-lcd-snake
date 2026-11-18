@@ -7,12 +7,29 @@
 // this is modified from of the Pico SDK hardware/flash.c but modified to use a user buffer for boot2_copyout and combine to a single sector erase/write function
 
 #include "picoflash.h"
+#if PICO_RP2350
+#include "hardware/flash.h"
+#else
 #include "pico/bootrom.h"
 
 #include "hardware/structs/ssi.h"
 #include "hardware/structs/ioqspi.h"
+#endif
 
 #define FLASH_BLOCK_ERASE_CMD 0xd8
+
+#if PICO_RP2350
+
+void __no_inline_not_in_flash_func(picoflash_sector_program)(
+    uint32_t flash_offs, const uint8_t *data) {
+    // RP2350 has a different QMI/XIP controller.  Use the Pico SDK's
+    // cross-chip flash implementation instead of the RP2040 SSI sequence.
+    // The renderer has already parked core 1 in RAM before this is called.
+    flash_range_erase(flash_offs, FLASH_SECTOR_SIZE);
+    flash_range_program(flash_offs, data, FLASH_SECTOR_SIZE);
+}
+
+#else
 
 //-----------------------------------------------------------------------------
 // Infrastructure for reentering XIP mode after exiting for programming (take
@@ -53,3 +70,5 @@ void __no_inline_not_in_flash_func(picoflash_sector_program)(uint32_t flash_offs
     flash_flush_cache(); // Note this is needed to remove CSn IO force as well as cache flushing
     flash_enable_xip_via_boot2(boot2_copyout);
 }
+
+#endif

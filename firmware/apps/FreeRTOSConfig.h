@@ -46,6 +46,17 @@
 #define configRUN_MULTIPLE_PRIORITIES 0
 #define configUSE_PASSIVE_IDLE_HOOK 0
 
+#if PICO_RP2350
+// Required by the upstream Cortex-M33 RP2350 port.  The Pico SDK image runs
+// at one privilege level in the secure state; preserve floating-point task
+// context because the applications use float-based sensor/weather values.
+#define configENABLE_MPU 0
+#define configENABLE_TRUSTZONE 0
+#define configRUN_FREERTOS_SECURE_ONLY 1
+#define configENABLE_FPU 1
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 16
+#endif
+
 #define configSUPPORT_PICO_SYNC_INTEROP 1
 #define configSUPPORT_PICO_TIME_INTEROP 1
 

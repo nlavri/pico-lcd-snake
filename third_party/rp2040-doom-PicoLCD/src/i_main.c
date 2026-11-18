@@ -28,6 +28,10 @@
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
+#if DOOM_EP0172_EARLY_SCREEN
+#include "hardware/structs/watchdog.h"
+#include "hardware/watchdog.h"
+#endif
 #include "pico/sem.h"
 #include "pico/multicore.h"
 #if PICO_ON_DEVICE
@@ -40,6 +44,10 @@
 #include "doomtype.h"
 #include "i_system.h"
 #include "m_argv.h"
+
+#if DOOM_EP0172_EARLY_SCREEN
+#include "pico-screens/screen.h"
+#endif
 
 //
 // D_DoomMain()
@@ -64,9 +72,19 @@ int main(int argc, char **argv)
     myargv = argv;
 #endif
 #if PICO_ON_DEVICE
+#if DOOM_EP0172_SAFE_CLOCK
+    // Start the EP-0172 port at the RP2040's normal clock while validating
+    // its display transport.  Other DOOM targets retain the 270 MHz setup.
+    set_sys_clock_khz(125000, true);
+#else
     vreg_set_voltage(VREG_VOLTAGE_1_30);
     // todo pause? is this the cause of the cold start isue?
+#if DOOM_EP0172_PICO2
+    set_sys_clock_khz(300000, true);
+#else
     set_sys_clock_khz(270000, true);
+#endif
+#endif
 #ifdef PICO_SMPS_MODE_PIN
     gpio_init(PICO_SMPS_MODE_PIN);
     gpio_set_dir(PICO_SMPS_MODE_PIN, GPIO_OUT);
@@ -76,8 +94,36 @@ int main(int argc, char **argv)
 #if LIB_PICO_STDIO
     stdio_init_all();
 #endif
+#if DOOM_EP0172_EARLY_SCREEN
+    // Initialize the EP-0172 before input and WAD setup so probe-free boot
+    // diagnostics remain observable even if later initialization stalls.
+    I_initScreen();
+#if DOOM_EP0172_AUTOSTART
+    // A frame watchdog records the last synchronization point in scratch[0].
+    // After a watchdog reset, show the persistent visual code briefly, then
+    // consume it and reboot into a clean run.  BOOTSEL flashing does not clear
+    // watchdog scratch registers, so freezing here would otherwise prevent a
+    // newly flashed diagnostic build from ever starting.
+    if (watchdog_caused_reboot()
+        && watchdog_hw->scratch[1] == 0x45503172u) {
+        uint32_t failed_stage = watchdog_hw->scratch[0];
+        if (failed_stage > 16) failed_stage = 16;
+        for (uint32_t stage = 1; stage <= failed_stage; ++stage) {
+            I_showBootStage((uint8_t)stage);
+        }
+        sleep_ms(1500);
+        watchdog_hw->scratch[1] = 0;
+        watchdog_reboot(0, 0, 0);
+        while (true) tight_loop_contents();
+    }
+#endif
+    I_showBootStage(1);
+#endif
 #if PICO_BUILD
     I_Init();
+#if DOOM_EP0172_EARLY_SCREEN
+    I_showBootStage(2);
+#endif
 #endif
 #if USE_PICO_NET
     // do init early to set pulls
@@ -101,6 +147,9 @@ int main(int argc, char **argv)
 
     // start doom
 
+#if DOOM_EP0172_EARLY_SCREEN
+    I_showBootStage(3);
+#endif
     D_DoomMain ();
 
     return 0;

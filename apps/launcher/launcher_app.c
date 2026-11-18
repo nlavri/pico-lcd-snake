@@ -19,6 +19,10 @@ static bool application_is_visible(const LauncherState *state, size_t index)
 
 static size_t visible_row_count(const LauncherState *state)
 {
+    if (state->context->display_height >= 300)
+    {
+        return 9;
+    }
     return state->context->display_height >= 200 ? 6 : 5;
 }
 
@@ -86,6 +90,28 @@ static void move_selection(LauncherState *state, int direction)
     }
 }
 
+static bool application_at_visible_row(
+    const LauncherState *state,
+    size_t requested_row,
+    size_t *application_index)
+{
+    size_t visible_row = 0;
+    for (size_t i = 0; i < state->context->application_count; i++)
+    {
+        if (!application_is_visible(state, i))
+        {
+            continue;
+        }
+        if (visible_row == requested_row)
+        {
+            *application_index = i;
+            return true;
+        }
+        visible_row++;
+    }
+    return false;
+}
+
 static bool launcher_start(void *state_memory, AppContext *context)
 {
     LauncherState *state = state_memory;
@@ -108,6 +134,35 @@ static AppResult launcher_handle_event(
     const InputEvent *event)
 {
     LauncherState *state = state_memory;
+    if (event->button == INPUT_TOUCH && event->action == INPUT_PRESSED)
+    {
+        if (state->help_visible)
+        {
+            state->help_visible = false;
+            return APP_RESULT_REDRAW;
+        }
+
+        const uint16_t row_top = 22;
+        const uint16_t row_spacing =
+            state->context->display_height >= 200 ? 28 : 20;
+        const uint16_t list_bottom = (uint16_t)(
+            row_top + visible_row_count(state) * row_spacing);
+        if (event->y >= row_top && event->y < list_bottom)
+        {
+            const size_t visible_row = state->first_visible_row +
+                (event->y - row_top) / row_spacing;
+            size_t application_index;
+            if (application_at_visible_row(
+                    state, visible_row, &application_index))
+            {
+                state->selected_index = application_index;
+                state->context->request_launch(
+                    state->context->manager,
+                    state->selected_index);
+            }
+        }
+        return APP_RESULT_CONTINUE;
+    }
     if (event->action != INPUT_PRESSED && event->action != INPUT_REPEAT)
     {
         return APP_RESULT_CONTINUE;
@@ -148,15 +203,6 @@ static AppResult launcher_handle_event(
         state->help_visible = true;
         return APP_RESULT_REDRAW;
     }
-    else if (event->button == INPUT_B &&
-             state->context->application_count > 0 &&
-             application_is_visible(state, state->selected_index))
-    {
-        state->context->request_restart(
-            state->context->manager,
-            state->selected_index);
-    }
-
     return APP_RESULT_CONTINUE;
 }
 
@@ -171,7 +217,7 @@ static void render_help(DisplaySurface *surface)
         surface, 8, 42, "RIGHT/CLICK Open app",
         ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
-        surface, 8, 60, "B           Restart",
+        surface, 8, 60, "B           No action at home",
         ui_menu_text_color(), DISPLAY_COLOR_BLACK);
     display_draw_text(
         surface, 8, 78, "A           Help",
@@ -232,7 +278,7 @@ static void launcher_render(const void *state_memory, DisplaySurface *surface)
             ui_error_color(), DISPLAY_COLOR_BLACK);
     }
 
-    ui_draw_footer(surface, ">/CLICK:OPEN A:HELP B:RESTART");
+    ui_draw_footer(surface, ">/CLICK/TAP:OPEN A:HELP");
 }
 
 const Application launcher_application = {

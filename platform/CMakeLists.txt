@@ -1,13 +1,22 @@
 if(APP_HARDWARE STREQUAL "waveshare_pico_lcd_1_14")
     set(APP_BOARD_SOURCES
         boards/waveshare_pico_lcd_1_14/display.c
-        boards/waveshare_pico_lcd_1_14/input.c)
+        boards/waveshare_pico_lcd_1_14/input.c
+        rp2040/rgb_led_none.c)
     set(APP_BOARD_LIBRARIES LCD)
 elseif(APP_HARDWARE STREQUAL "spotpear_rpi_lcd_1_54")
     set(APP_BOARD_SOURCES
         boards/spotpear_rpi_lcd_1_54/display.c
-        boards/spotpear_rpi_lcd_1_54/input.c)
+        boards/spotpear_rpi_lcd_1_54/input.c
+        rp2040/rgb_led_none.c)
     set(APP_BOARD_LIBRARIES)
+elseif(APP_HARDWARE STREQUAL "geeekpi_ep0172")
+    set(APP_BOARD_SOURCES
+        boards/geeekpi_ep0172/display.c
+        boards/geeekpi_ep0172/input.c
+        boards/geeekpi_ep0172/touch.c
+        boards/geeekpi_ep0172/rgb_led.c)
+    set(APP_BOARD_LIBRARIES pico_status_led)
 else()
     message(FATAL_ERROR "Unsupported APP_HARDWARE: ${APP_HARDWARE}")
 endif()
@@ -49,6 +58,14 @@ target_link_libraries(app_platform
         hardware_adc
         hardware_dma
         hardware_flash
+        hardware_i2c
         hardware_spi
         pico_flash
 )
+
+if(APP_HARDWARE STREQUAL "geeekpi_ep0172")
+    target_compile_definitions(app_platform PRIVATE
+        PICO_DEFAULT_WS2812_PIN=12
+        PICO_STATUS_LED_AVAILABLE=0
+        PICO_COLORED_STATUS_LED_AVAILABLE=1)
+endif()

@@ -195,6 +195,8 @@ typedef enum UiKeyboardKeyType
     UI_KEY_SYMBOLS,
     UI_KEY_LETTERS,
     UI_KEY_SPACE,
+    UI_KEY_BACKSPACE,
+    UI_KEY_ENTER,
 } UiKeyboardKeyType;
 
 typedef struct UiKeyboardKey
@@ -232,8 +234,10 @@ static const UiKeyboardKey main_keys[] = {
     CHARACTER_KEY('c', 3, 4), CHARACTER_KEY('v', 3, 5),
     CHARACTER_KEY('b', 3, 6), CHARACTER_KEY('n', 3, 7),
     CHARACTER_KEY('m', 3, 8),
-    ACTION_KEY(UI_KEY_SYMBOLS, 4, 0, 3),
-    ACTION_KEY(UI_KEY_SPACE, 4, 3, 7),
+    ACTION_KEY(UI_KEY_SYMBOLS, 4, 0, 2),
+    ACTION_KEY(UI_KEY_SPACE, 4, 2, 4),
+    ACTION_KEY(UI_KEY_BACKSPACE, 4, 6, 2),
+    ACTION_KEY(UI_KEY_ENTER, 4, 8, 2),
 };
 
 static const UiKeyboardKey symbol_keys[] = {
@@ -253,8 +257,10 @@ static const UiKeyboardKey symbol_keys[] = {
     CHARACTER_KEY('<', 2, 6), CHARACTER_KEY('>', 2, 7),
     CHARACTER_KEY('/', 2, 8), CHARACTER_KEY('?', 2, 9),
     CHARACTER_KEY('`', 3, 4), CHARACTER_KEY('~', 3, 5),
-    ACTION_KEY(UI_KEY_LETTERS, 4, 0, 3),
-    ACTION_KEY(UI_KEY_SPACE, 4, 3, 7),
+    ACTION_KEY(UI_KEY_LETTERS, 4, 0, 2),
+    ACTION_KEY(UI_KEY_SPACE, 4, 2, 4),
+    ACTION_KEY(UI_KEY_BACKSPACE, 4, 6, 2),
+    ACTION_KEY(UI_KEY_ENTER, 4, 8, 2),
 };
 
 enum
@@ -433,6 +439,55 @@ static UiTextInputResult activate_key(UiTextInput *input)
             return append_character(input, ' ')
                 ? UI_TEXT_INPUT_CHANGED
                 : UI_TEXT_INPUT_UNCHANGED;
+        case UI_KEY_BACKSPACE:
+            if (input->length > 0)
+            {
+                input->value[--input->length] = '\0';
+                return UI_TEXT_INPUT_CHANGED;
+            }
+            return UI_TEXT_INPUT_UNCHANGED;
+        case UI_KEY_ENTER:
+            return UI_TEXT_INPUT_SUBMIT;
+    }
+    return UI_TEXT_INPUT_UNCHANGED;
+}
+
+static uint16_t keyboard_cell_width(uint16_t surface_width)
+{
+    return surface_width >= 400
+        ? (uint16_t)((surface_width - 8) / 10)
+        : 23;
+}
+
+static uint16_t keyboard_row_height(uint16_t surface_height)
+{
+    return surface_height >= 300 ? 46 : 16;
+}
+
+UiTextInputResult ui_text_input_handle_touch(
+    UiTextInput *input,
+    uint16_t x,
+    uint16_t y,
+    uint16_t surface_width,
+    uint16_t surface_height,
+    uint16_t keyboard_y)
+{
+    const uint16_t cell_width = keyboard_cell_width(surface_width);
+    const uint16_t row_height = keyboard_row_height(surface_height);
+    size_t count;
+    const UiKeyboardKey *keys = keyboard_keys(input, &count);
+    for (size_t i = 0; i < count; i++)
+    {
+        const UiKeyboardKey *key = &keys[i];
+        const uint16_t x0 = (uint16_t)(4 + key->column * cell_width);
+        const uint16_t x1 = (uint16_t)(x0 + key->span * cell_width - 3);
+        const uint16_t y0 = (uint16_t)(keyboard_y + key->row * row_height);
+        const uint16_t y1 = (uint16_t)(y0 + row_height - 2);
+        if (x >= x0 && x <= x1 && y >= y0 && y <= y1)
+        {
+            input->selected_key = (uint8_t)i;
+            return activate_key(input);
+        }
     }
     return UI_TEXT_INPUT_UNCHANGED;
 }
@@ -688,6 +743,12 @@ static void keyboard_key_label(
         case UI_KEY_SPACE:
             snprintf(label, 6, "SPACE");
             break;
+        case UI_KEY_BACKSPACE:
+            snprintf(label, 6, "DEL");
+            break;
+        case UI_KEY_ENTER:
+            snprintf(label, 6, "ENTER");
+            break;
     }
 }
 
@@ -698,16 +759,22 @@ void ui_draw_virtual_keyboard(
 {
     size_t count;
     const UiKeyboardKey *keys = keyboard_keys(input, &count);
+    const uint16_t cell_width = keyboard_cell_width(surface->width);
+    const uint16_t row_height = keyboard_row_height(surface->height);
     for (size_t i = 0; i < count; i++)
     {
         const UiKeyboardKey *key = &keys[i];
-        const uint16_t x0 = (uint16_t)(4 + key->column * 23);
-        const uint16_t x1 = (uint16_t)(x0 + key->span * 23 - 3);
-        const uint16_t y0 = (uint16_t)(y + key->row * 16);
-        const uint16_t y1 = (uint16_t)(y0 + 14);
+        const uint16_t x0 = (uint16_t)(4 + key->column * cell_width);
+        const uint16_t x1 =
+            (uint16_t)(x0 + key->span * cell_width - 3);
+        const uint16_t y0 = (uint16_t)(y + key->row * row_height);
+        const uint16_t y1 = (uint16_t)(y0 + row_height - 2);
         const bool is_selected = i == input->selected_key;
         const bool is_active_shift =
             key->type == UI_KEY_SHIFT && input->shifted;
+        const DisplayFont key_font = surface->height >= 300
+            ? DISPLAY_FONT_COMPACT
+            : DISPLAY_FONT_SMALL;
         const DisplayColor color = is_selected || is_active_shift
             ? ui_accent_color()
             : ui_chrome_color();
@@ -719,13 +786,17 @@ void ui_draw_virtual_keyboard(
         char label[6];
         keyboard_key_label(input, key, label);
         const uint16_t label_width =
-            display_text_width(label, DISPLAY_FONT_SMALL);
+            display_text_width(label, key_font);
+        const uint16_t label_height = display_font_height(key_font);
         const uint16_t key_width = x1 - x0 + 1;
         const uint16_t label_x = label_width < key_width
             ? (uint16_t)(x0 + (key_width - label_width) / 2)
             : x0;
-        display_draw_text(
-            surface, label_x, (uint16_t)(y0 + 1), label,
+        const uint16_t label_y = label_height < row_height
+            ? (uint16_t)(y0 + (row_height - label_height) / 2)
+            : y0;
+        display_draw_text_with_font(
+            surface, label_x, label_y, label, key_font,
             is_selected || is_active_shift
                 ? ui_menu_text_color()
                 : ui_secondary_text_color(),

@@ -35,6 +35,8 @@ typedef struct CalculatorAppState
     size_t length;
     uint8_t selected_row;
     uint8_t selected_column;
+    uint16_t display_width;
+    uint16_t display_height;
     bool evaluated;
 } CalculatorAppState;
 
@@ -55,9 +57,10 @@ static const CalculatorKey calculator_keys[CALCULATOR_ROWS][CALCULATOR_COLUMNS] 
 
 static bool calculator_start(void *state_memory, AppContext *context)
 {
-    (void)context;
     CalculatorAppState *state = state_memory;
     *state = (CalculatorAppState){0};
+    state->display_width = context->display_width;
+    state->display_height = context->display_height;
     return true;
 }
 
@@ -169,6 +172,40 @@ static AppResult calculator_handle_event(
     const InputEvent *event)
 {
     CalculatorAppState *state = state_memory;
+    if (event->button == INPUT_TOUCH && event->action == INPUT_PRESSED)
+    {
+        const bool expanded = state->display_height >= 200;
+        const bool large = state->display_height >= 300;
+        const uint16_t keypad_y = large ? 84 : expanded ? 91 : 65;
+        const uint16_t row_step = large ? 50 : expanded ? 30 : 14;
+        const uint16_t key_height = large ? 46 : expanded ? 27 : 13;
+        const uint16_t margin = 4;
+        const uint16_t gap = 2;
+        const uint16_t key_width =
+            (state->display_width - margin * 2 -
+                gap * (CALCULATOR_COLUMNS - 1)) /
+            CALCULATOR_COLUMNS;
+        if (event->y >= keypad_y)
+        {
+            const uint8_t row = (uint8_t)((event->y - keypad_y) / row_step);
+            const uint16_t column_step = key_width + gap;
+            const uint8_t column = event->x >= margin
+                ? (uint8_t)((event->x - margin) / column_step)
+                : CALCULATOR_COLUMNS;
+            const uint16_t key_x = (uint16_t)(margin + column * column_step);
+            const uint16_t key_y = (uint16_t)(keypad_y + row * row_step);
+            if (row < CALCULATOR_ROWS && column < CALCULATOR_COLUMNS &&
+                event->x >= key_x && event->x < key_x + key_width &&
+                event->y < key_y + key_height)
+            {
+                state->selected_row = row;
+                state->selected_column = column;
+                activate_selected_key(state);
+                return APP_RESULT_REDRAW;
+            }
+        }
+        return APP_RESULT_CONTINUE;
+    }
     if (event->action != INPUT_PRESSED && event->action != INPUT_REPEAT)
     {
         return APP_RESULT_CONTINUE;
@@ -273,6 +310,7 @@ static void calculator_render(
 {
     const CalculatorAppState *state = state_memory;
     const bool expanded = surface->height >= 200;
+    const bool large = surface->height >= 300;
     const DisplayFont expression_font = expanded
         ? DISPLAY_FONT_COMPACT
         : DISPLAY_FONT_SMALL;
@@ -304,17 +342,17 @@ static void calculator_render(
         state->error != NULL ? ui_error_color() : ui_neutral_text_color(),
         DISPLAY_COLOR_BLACK);
 
-    const uint16_t keypad_y = expanded ? 91 : 65;
-    const uint16_t row_step = expanded ? 30 : 14;
-    const uint16_t key_height = expanded ? 27 : 13;
+    const uint16_t keypad_y = large ? 84 : expanded ? 91 : 65;
+    const uint16_t row_step = large ? 50 : expanded ? 30 : 14;
+    const uint16_t key_height = large ? 46 : expanded ? 27 : 13;
     const uint16_t margin = 4;
     const uint16_t gap = 2;
     const uint16_t key_width =
         (surface->width - margin * 2 - gap * (CALCULATOR_COLUMNS - 1)) /
         CALCULATOR_COLUMNS;
-    const DisplayFont key_font = expanded
-        ? DISPLAY_FONT_COMPACT
-        : DISPLAY_FONT_SMALL;
+    const DisplayFont key_font = large
+        ? DISPLAY_FONT_MEDIUM
+        : expanded ? DISPLAY_FONT_COMPACT : DISPLAY_FONT_SMALL;
 
     for (uint8_t row = 0; row < CALCULATOR_ROWS; row++)
     {

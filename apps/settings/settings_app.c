@@ -366,11 +366,109 @@ static AppResult handle_password_event(
         : APP_RESULT_CONTINUE;
 }
 
+static AppResult handle_touch_event(
+    SettingsState *state,
+    const InputEvent *event)
+{
+    const InputEvent activate = {
+        .button = INPUT_CLICK,
+        .action = INPUT_PRESSED,
+        .timestamp_ms = event->timestamp_ms,
+    };
+    switch (state->screen)
+    {
+        case SETTINGS_SCREEN_MENU:
+            if (event->y >= 22 && event->y < 94)
+            {
+                state->selected_menu = (event->y - 22) / 24;
+                return handle_menu_event(state, &activate);
+            }
+            break;
+        case SETTINGS_SCREEN_STATUS:
+            return handle_status_event(state, &activate);
+        case SETTINGS_SCREEN_NETWORKS:
+            if (event->y >= 26)
+            {
+                const size_t row = (event->y - 26) / 21;
+                const size_t index = state->first_visible_network + row;
+                if (row < SETTINGS_VISIBLE_NETWORKS &&
+                    index < state->network.access_point_count)
+                {
+                    state->selected_network = index;
+                    return handle_network_list_event(state, &activate);
+                }
+            }
+            break;
+        case SETTINGS_SCREEN_PASSWORD:
+        {
+            const uint16_t keyboard_y =
+                state->context->display_height >= 300 ? 50 : 38;
+            const UiTextInputResult result = ui_text_input_handle_touch(
+                &state->password,
+                event->x,
+                event->y,
+                state->context->display_width,
+                state->context->display_height,
+                keyboard_y);
+            if (result == UI_TEXT_INPUT_SUBMIT)
+            {
+                return handle_password_event(state, &(InputEvent){
+                    .button = INPUT_A,
+                    .action = INPUT_PRESSED,
+                    .timestamp_ms = event->timestamp_ms,
+                });
+            }
+            if (result == UI_TEXT_INPUT_CHANGED)
+            {
+                state->password_too_short = false;
+                return APP_RESULT_REDRAW;
+            }
+            break;
+        }
+        case SETTINGS_SCREEN_ACCENTS:
+        {
+            const bool tall = state->context->display_height >=
+                SETTINGS_TALL_DISPLAY_HEIGHT;
+            const uint16_t first_y = tall ? 24 : 21;
+            const uint16_t row_height = tall ? 23 : 19;
+            if (event->y >= first_y)
+            {
+                const size_t row = (event->y - first_y) / row_height;
+                const size_t first = tall ? 0 : state->first_visible_accent;
+                const size_t index = first + row;
+                if (index < UI_ACCENT_COUNT)
+                {
+                    state->selected_accent_position = index;
+                    ui_preview_accent((UiAccent)index);
+                    return handle_accent_event(state, &activate);
+                }
+            }
+            break;
+        }
+        case SETTINGS_SCREEN_BRIGHTNESS:
+            if (event->y >= 27 && event->y < 217)
+            {
+                const uint8_t row = (uint8_t)((event->y - 27) / 19);
+                const uint8_t brightness = (uint8_t)((10 - row) * 10);
+                ui_preview_brightness(brightness);
+                ui_commit_brightness(brightness);
+                state->screen = SETTINGS_SCREEN_MENU;
+                return APP_RESULT_REDRAW;
+            }
+            break;
+    }
+    return APP_RESULT_CONTINUE;
+}
+
 static AppResult settings_handle_event(
     void *state_memory,
     const InputEvent *event)
 {
     SettingsState *state = state_memory;
+    if (event->button == INPUT_TOUCH && event->action == INPUT_PRESSED)
+    {
+        return handle_touch_event(state, event);
+    }
     if (event->action != INPUT_PRESSED && event->action != INPUT_REPEAT)
     {
         return APP_RESULT_CONTINUE;
@@ -670,11 +768,12 @@ static void render_password(
 {
     char ssid[32];
     snprintf(ssid, sizeof(ssid), "SSID: %.25s", state->pending_network.ssid);
+    const bool large = surface->height >= 300;
     display_draw_text(
-        surface, 5, 1, ssid,
+        surface, 5, large ? 3 : 1, ssid,
         DISPLAY_COLOR_GRAY, DISPLAY_COLOR_BLACK);
-    ui_draw_text_input(surface, &state->password, 14);
-    ui_draw_virtual_keyboard(surface, &state->password, 38);
+    ui_draw_text_input(surface, &state->password, large ? 20 : 14);
+    ui_draw_virtual_keyboard(surface, &state->password, large ? 50 : 38);
     ui_draw_footer(
         surface,
         state->password_too_short

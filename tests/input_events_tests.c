@@ -2,6 +2,20 @@
 
 #include "input_events.h"
 
+#ifndef APP_INPUT_HOME_CLICK_B
+#define APP_INPUT_HOME_CLICK_B 0
+#endif
+
+static void set_home_chord(PlatformInputState *input, bool pressed)
+{
+#if APP_INPUT_HOME_CLICK_B
+    input->click = pressed;
+#else
+    input->a = pressed;
+#endif
+    input->b = pressed;
+}
+
 int main(void)
 {
     InputEventSource source = {0};
@@ -22,16 +36,14 @@ int main(void)
     assert(events[0].button == INPUT_A);
     assert(events[0].action == INPUT_RELEASED);
 
-    input.a = true;
-    input.b = true;
+    set_home_chord(&input, true);
     assert(input_events_update(&source, &input, 100, events) == 0);
     assert(input_events_update(&source, &input, 125, events) == 0);
     assert(input_events_update(&source, &input, 875, events) == 1);
     assert(events[0].button == INPUT_HOME);
     assert(events[0].action == INPUT_PRESSED);
 
-    input.a = false;
-    input.b = false;
+    set_home_chord(&input, false);
     assert(input_events_update(&source, &input, 900, events) == 0);
     assert(input_events_update(&source, &input, 925, events) == 0);
 
@@ -55,6 +67,32 @@ int main(void)
     assert(events[0].button == INPUT_RIGHT);
     assert(events[0].action == INPUT_RELEASED);
     assert(input_events_update(&source, &input, 1700, events) == 0);
+
+    input.touch = true;
+    input.touch_x = 120;
+    input.touch_y = 80;
+    assert(input_events_update(&source, &input, 1800, events) == 1);
+    assert(events[0].button == INPUT_TOUCH);
+    assert(events[0].action == INPUT_PRESSED);
+    assert(events[0].x == 120);
+    assert(events[0].y == 80);
+
+    input.touch_x = 140;
+    input.touch_y = 90;
+    assert(input_events_update(&source, &input, 1810, events) == 1);
+    assert(events[0].button == INPUT_TOUCH);
+    assert(events[0].action == INPUT_MOVED);
+    assert(events[0].x == 140);
+    assert(events[0].y == 90);
+
+    input.touch = false;
+    input.touch_x = 0;
+    input.touch_y = 0;
+    assert(input_events_update(&source, &input, 1820, events) == 1);
+    assert(events[0].button == INPUT_TOUCH);
+    assert(events[0].action == INPUT_RELEASED);
+    assert(events[0].x == 140);
+    assert(events[0].y == 90);
 
     return 0;
 }

@@ -46,6 +46,13 @@
 #include "pico/scanvideo.h"
 #include "pico/scanvideo/composable_scanline.h"
 #include "pico/multicore.h"
+#if DOOM_EP0172_DIAGNOSTICS
+#include "hardware/structs/watchdog.h"
+#include "hardware/watchdog.h"
+#define EP0172_VIDEO_STAGE(stage) (watchdog_hw->scratch[0] = (stage))
+#else
+#define EP0172_VIDEO_STAGE(stage) ((void)0)
+#endif
 #include "pico/sync.h"
 #include "pico/time.h"
 #include "hardware/gpio.h"
@@ -131,11 +138,22 @@ pixel_t *I_VideoBuffer; // todo can't have this
 
 uint8_t __aligned(4) frame_buffer[2][SCREENWIDTH*MAIN_VIEWHEIGHT];
 static uint16_t palette[256];
+#if ST7796_480_320_EP0172
+static uint16_t shared_pal[NUM_SHARED_PALETTES][16];
+#else
 static uint16_t __scratch_x("shared_pal") shared_pal[NUM_SHARED_PALETTES][16]; // TODO I can't fit all this in scratch but it's probably going to affect performance
+#endif
 static int8_t next_pal=-1;
 
 semaphore_t render_frame_ready, display_frame_freed;
 semaphore_t core1_launch;
+#if ST7796_480_320_EP0172
+// The EP-0172 backend performs 3:2 scaling, RGB565 byte conversion and
+// blocking SPI calls from the renderer core.  Modern GCC call frames exceed
+// the SDK's 4 KiB scratch-X stack in this path, so use a larger main-SRAM
+// stack for core 1 on this target only.
+static uint32_t ep0172_core1_stack[2048] __aligned(8);
+#endif
 
 uint8_t *text_screen_data;
 static uint16_t *text_scanline_buffer_start;
@@ -609,7 +627,11 @@ static inline uint draw_vpatch(uint16_t *dest, patch_t *patch, vpatchlist_t *vp,
 #if PICO_ON_DEVICE
                 if (patch == stbar) {
                     static const uint8_t *cached_data;
+#if ST7796_480_320_EP0172
+                    static uint32_t data_cache[41];
+#else
                     static uint32_t __scratch_x("data_cache") data_cache[41];
+#endif
                     int i = 0;
                     uint32_t *d = (uint32_t *) dest;
 #define DMA_CHANNEL 11
@@ -859,6 +881,7 @@ void handle_overlays(uint16_t *buffer, int scanline) {
 // SDK releases consume slightly more of that 4 KiB bank; leaving this function
 // there forced the core 1 stack below the renderer's safe upstream size.
 void fill_scanlines() {
+    EP0172_VIDEO_STAGE(10);
     frame++;
     // this shouldn't be here, but it's required for some reason
     if (display_video_type != VIDEO_TYPE_SAVING && frame > 1) {
@@ -871,7 +894,10 @@ void fill_scanlines() {
     need_save = interp_in_use;
     interp_updated = 0;
 #endif
-    uint16_t buffer[SCREENWIDTH];
+    // This function runs on core 1, whose stack lives in the 4 KiB scratch-X
+    // bank.  Keep the 640-byte scanline in main SRAM; an automatic array here
+    // consumes the scarce core-1 stack and corrupts frames with newer GCC.
+    static uint16_t buffer[SCREENWIDTH];
     I_handleFrameStart(frame);
 
     const uint8_t end_scanline = SUPPORT_OVERLAYS ? SCREENHEIGHT : MAIN_VIEWHEIGHT;
@@ -908,7 +934,15 @@ void fill_scanlines() {
         DEBUG_PINS_CLR(scanline_copy, 1);
     }
     I_handleFrameEnd(frame);
+#if DOOM_EP0172_DIAGNOSTICS
+    // A complete panel transfer proves that core 1, SPI, and the render/display
+    // handshake are making progress.  D_RunFrame can legitimately take longer
+    // than the watchdog period while loading or wiping into the first level.
+    watchdog_update();
+#endif
+    EP0172_VIDEO_STAGE(11);
     new_frame_stuff();
+    EP0172_VIDEO_STAGE(12);
 #if USE_INTERP
     if (interp_updated && need_save) {
         interp_restore_static(interp0, &interp0_save);
@@ -940,7 +974,12 @@ void I_InitGraphics(void)
     sem_init(&display_frame_freed, 1, 2);
     sem_init(&core1_launch, 0, 1);
     pd_init();
+#if ST7796_480_320_EP0172
+    multicore_launch_core1_with_stack(
+        core1, ep0172_core1_stack, sizeof(ep0172_core1_stack));
+#else
     multicore_launch_core1(core1);
+#endif
     // wait for core1 launch as it may do malloc and we have no mutex around that
     sem_acquire_blocking(&core1_launch);
 #if USE_ZONE_FOR_MALLOC
